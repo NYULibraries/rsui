@@ -80,11 +80,17 @@ class ExternalAuthController extends Controller
             session(['external_auth_expires' => $expiresCookie]);
 
             // Create or update local user for Sanctum session
+            $username = $data['username'] ?? null;
+            if (!$username) {
+                Log::error('Missing username in API response.', ['response' => $data]);
+                return back()->withErrors(['email' => 'Invalid API response: missing username']);
+            }
+
             $user = User::updateOrCreate(
                 ['email' => $request->email],
                 [
-                    'name' => $data['username'] ?? 'External User',
-                    'password' => Hash::make(Str::random(32)),
+                    'name' => $username,
+                    'password' => Hash::make(Str::random(32) . time()), // Add time for uniqueness
                 ]
             );
 
@@ -93,13 +99,14 @@ class ExternalAuthController extends Controller
             return redirect()->intended('/dashboard');
 
         } catch (ConnectionException $e) {
-            return back()->withErrors(['errors' => 'API Connection Error: ' . $e->getMessage()]);
+            Log::error('API Connection Error: ' . $e->getMessage());
+            return back()->withErrors(['email' => 'API Connection Error. Please try again later.']);
         } catch (RequestException $e) {
             Log::error('API Request Error: ' . $e->getMessage(), ['response' => $e->response ? $e->response->body() : 'No response body']);
-            return back()->withErrors(['errors' => 'An error occurred while fetching data from the API.']);
+            return back()->withErrors(['email' => 'An error occurred while authenticating with the API.']);
         } catch (\Exception $e) {
             Log::error('Unexpected error: ' . $e->getMessage());
-            return back()->withErrors(['errors' => 'An unexpected error occurred.']);
+            return back()->withErrors(['email' => 'An unexpected error occurred. Please try again.']);
         }
     }
 

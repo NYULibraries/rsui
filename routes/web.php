@@ -10,6 +10,7 @@ use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ExternalAuthController;
 use App\Http\Controllers\FilePreviewController;
+use App\Http\Controllers\SearchController;
 
 use Inertia\Inertia;
 
@@ -64,6 +65,11 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
         ->name('logout');
 
     Route::get('ping', [ExternalApiService::class, 'ping'])->name('ping');
+
+    // Search routes
+    Route::get('search', [SearchController::class, 'index'])->name('search');
+
+    Route::get('api/search/autocomplete', [SearchController::class, 'autocomplete'])->name('search.autocomplete');
 
 });
 

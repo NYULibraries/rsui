@@ -16,7 +16,6 @@ const mainNavItems: NavItem[] = [
 ];
 
 const footerNavItems: NavItem[] = [
-
     {
         title: 'NYU Digital Library Technology Services',
         href: 'https://wp.nyu.edu/library-dlts/',

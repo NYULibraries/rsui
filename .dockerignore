@@ -1,0 +1,40 @@
+# DevContainer Configuration
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Cache directories
+node_modules/
+vendor/
+bootstrap/cache/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Database files
+database/database.sqlite
+database/*.sqlite
+
+# Logs
+storage/logs/
+*.log
+
+# Temporary files
+.tmp/
+.temp/
+
+# Development files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.dockerignore
+Dockerfile.dev

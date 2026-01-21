@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Services\ExternalApiService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class PasswordController extends Controller
 {
@@ -17,12 +19,12 @@ class PasswordController extends Controller
         $this->externalApiService = $externalApiService;
     }
 
-    public function edit()
+    public function edit(): Response
     {
         return Inertia::render('settings/password');
     }
 
-    public function update(Request $request)
+    public function update(Request $request): RedirectResponse
     {
         $validatedData = $request->validate([
             'current_password' => 'required',
@@ -33,10 +35,11 @@ class PasswordController extends Controller
         try {
             $response = $this->externalApiService->updateUserPassword($validatedData);
 
-            if ($response) {
+            if ($response && !isset($response['error'])) {
                 return back()->with('success', 'Password updated successfully.');
             } else {
-                return back()->withErrors(['current_password' => 'The provided password does not match your current password.']);
+                $errorMessage = $response['error'] ?? 'The provided password does not match your current password.';
+                return back()->withErrors(['current_password' => $errorMessage]);
             }
         } catch (\Exception $e) {
             Log::error('Error updating password: ' . $e->getMessage());

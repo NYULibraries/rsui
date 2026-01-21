@@ -446,4 +446,24 @@ class ExternalApiService
         }
     }
 
+    /**
+     * Search packages using the external API.
+     *
+     * @param string $term The search term.
+     * @return array|null The API response data, or null on failure.
+     */
+    public function search(string $term): ?array
+    {
+        try {
+            $response = $this->makeRequest('GET', "search?scope=packages&term=" . urlencode($term));
+            return $response?->json();
+        } catch (Exception $e) {
+            Log::error("Search error: " . $e->getMessage(), [
+                'exception' => $e,
+                'term' => $term,
+            ]);
+            return null;
+        }
+    }
+
 }

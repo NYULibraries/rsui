@@ -19,12 +19,14 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "laravel/boost": "^1.8",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
         "laravel/sail": "^1.41",
         "laravel/telescope": "^5.9",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "pestphp/pest": "^3.8.4",
         "phpunit/phpunit": "^11.5.3"
     },
     "autoload": {
@@ -88,4 +90,3 @@
     "minimum-stability": "stable",
     "prefer-stable": true
 }
-

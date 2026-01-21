@@ -24,9 +24,13 @@ class CollectionController extends Controller
 
           $collection = $this->externalApiService->getCollectionById($id);
 
-          $partnerId = $collection['partner_id'];
+          if (!$collection) {
+              throw new Exception('Collection not found');
+          }
 
-          $collectionId = $collection['id'];
+          $partnerId = $collection['partner_id'] ?? throw new Exception('Collection missing partner_id');
+
+          $collectionId = $collection['id'] ?? throw new Exception('Collection missing id');
 
           /**
            * Define the base URL path. This is the starting point for all generated URLs.
@@ -99,12 +103,17 @@ class CollectionController extends Controller
     public function path(string $partnerId, string $collectionId, string $storage_path = ''): Response
     {
 
-        $collection = $this->externalApiService->getCollectionById($collectionId);
+        try {
+            $collection = $this->externalApiService->getCollectionById($collectionId);
 
-        /**
-         * Define the base URL path. This is the starting point for all generated URLs.
-         */
-        $baseUrl = "/fs/paths/{$partnerId}/{$collectionId}";
+            if (!$collection) {
+                throw new Exception('Collection not found');
+            }
+
+            /**
+             * Define the base URL path. This is the starting point for all generated URLs.
+             */
+            $baseUrl = "/fs/paths/{$partnerId}/{$collectionId}";
 
         /**
          * Initialize an empty array to store the transformed data.
@@ -145,7 +154,7 @@ class CollectionController extends Controller
           $transformedArray[] = [
             'name' => $name,
             'object_type' => 'directory',
-            'display_size' => '', // As per your desired output, this is an empty string.
+            'display_size' => '',
             'url' => $itemUrl
           ];
 
@@ -159,6 +168,18 @@ class CollectionController extends Controller
             'collection' => $collection,
             'storage_path' => $transformedArray,
         ]);
+
+        } catch (Exception $e) {
+            $msg = "External API error: " . $e->getMessage();
+            // Optionally log the error
+            Log::error($msg);
+            // Return an error view or a fallback response
+            return Inertia::render('collection/Index', [
+                'collection' => null,
+                'storage_path' => [],
+                'error' => $msg,
+            ]);
+        }
 
     }
 
