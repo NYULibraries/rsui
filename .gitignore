@@ -26,6 +26,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+pnpm-workspace.yaml
 
 **/caddy
 frankenphp

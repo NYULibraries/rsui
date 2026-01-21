@@ -1,0 +1,33 @@
+# DevContainer Ignore
+
+# These files/folders will be excluded from the DevContainer
+.dockerignore
+.git
+.gitattributes
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+.devcontainer/.vscode-server
+node_modules
+vendor
+.env.local
+.env.*.local
+
+# Keep database files out of container
+database/database.sqlite
+database/*.sqlite
+
+# Log files
+storage/logs
+*.log
+
+# Cache directories
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+bootstrap/cache
+
+# Temporary files
+.tmp
+.temp

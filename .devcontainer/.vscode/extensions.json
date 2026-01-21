@@ -1,0 +1,58 @@
+{
+    "recommendations": [
+        "bmewburn.vscode-intelephense-client",
+        "felixfbecker.php-debug",
+        "xdebug.php-debug",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "formulahendry.auto-rename-tag",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode.vscode-docker",
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-json"
+    ],
+    "unwantedRecommendations": ["ms-vscode.vscode-php"],
+    "settings": {
+        "php.executablePath": "/usr/local/bin/php",
+        "php.suggest.basic": false,
+        "intelephense.environment.phpVersion": "8.4",
+        "intelephense.files.maxSize": 5000000,
+        "intelephense.diagnostics.enable": true,
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": true
+        },
+        "emmet.includeLanguages": {
+            "typescript": "html",
+            "typescriptreact": "html"
+        },
+        "files.associations": {
+            "*.blade.php": "html",
+            "*.tsx": "typescriptreact"
+        },
+        "[php]": {
+            "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+        },
+        "[typescript]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[yaml]": {
+            "editor.defaultFormatter": "redhat.vscode-yaml"
+        },
+        "emmet.triggerExpansionOnTab": true,
+        "tailwindCSS.includeLanguages": {
+            "typescript": "javascript",
+            "typescriptreact": "javascript"
+        }
+    }
+}

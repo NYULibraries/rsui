@@ -1,0 +1,88 @@
+{
+    "name": "rsui-dev",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/var/www/html",
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20",
+            "nodeGypDependencies": true
+        },
+        "ghcr.io/devcontainers/features/php:1": {
+            "version": "8.4",
+            "installComposer": true,
+            "extensions": [
+                "pdo",
+                "pdo_mysql",
+                "pdo_sqlite",
+                "bcmath",
+                "ctype",
+                "json",
+                "mbstring",
+                "openssl",
+                "tokenizer",
+                "xml",
+                "curl",
+                "zip",
+                "gd"
+            ]
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.vscode-typescript-next",
+                "bmewburn.vscode-intelephense-client",
+                "felixfbecker.php-debug",
+                "xdebug.php-debug",
+                "formulahendry.auto-rename-tag",
+                "bradlc.vscode-tailwindcss",
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint",
+                "ms-vscode.vscode-json",
+                "redhat.vscode-yaml",
+                "ms-vscode-remote.remote-containers",
+                "ms-vscode.vscode-docker"
+            ],
+            "settings": {
+                "php.executablePath": "/usr/local/bin/php",
+                "php.suggest.basic": false,
+                "intelephense.environment.phpVersion": "8.4",
+                "intelephense.files.maxSize": 5000000,
+                "typescript.preferences.importModuleSpecifier": "relative",
+                "editor.formatOnSave": true,
+                "editor.defaultFormatter": "esbenp.prettier-vscode",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": true
+                },
+                "emmet.includeLanguages": {
+                    "typescript": "html",
+                    "typescriptreact": "html"
+                }
+            }
+        }
+    },
+    "forwardPorts": [8000, 5173, 5174],
+    "portsAttributes": {
+        "8000": {
+            "label": "Laravel Server",
+            "onAutoForward": "notify"
+        },
+        "5173": {
+            "label": "Vite Dev Server",
+            "onAutoForward": "notify"
+        }
+    },
+    "postCreateCommand": "cp .env.example .env && composer install && npm install && php artisan key:generate",
+    "remoteUser": "vscode",
+    "mounts": ["source=${localWorkspaceFolder}", "target=/var/www/html", "type=volume", "consistency=cached"],
+    "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
+    "initArgs": ["--init"],
+    "remoteEnv": {
+        "APP_ENV": "local",
+        "APP_DEBUG": "true",
+        "DB_CONNECTION": "sqlite",
+        "DB_DATABASE": "/var/www/html/database/database.sqlite"
+    }
+}
