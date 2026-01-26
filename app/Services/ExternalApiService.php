@@ -452,11 +452,52 @@ class ExternalApiService
      * @param string $term The search term.
      * @return array|null The API response data, or null on failure.
      */
-    public function search(string $term): ?array
+    public function search(string $term, array $options = []): ?array
     {
+
+        $startTime = microtime(true);
+
         try {
+
+            $numFound = 0;
+
+            $start = 0;
+
+            $rows = 10;
+
+            $documents = [];
+
             $response = $this->makeRequest('GET', "search?scope=packages&term=" . urlencode($term));
-            return $response?->json();
+
+            $results = $response?->json();
+
+            if (!empty($results)) {
+                $numFound = $results['response']['numFound'];
+                $start = $results['response']['start'];
+                foreach ($results['response']['docs'] as $document) {
+                  $_doc = $document['package_search_response'];
+                  $_doc['package_path_url'] = str_replace($this->endpoint, '/', $_doc['package_path_url']);
+                  $documents[] = $_doc;
+                }
+            }
+
+            return [
+                'responseHeader' => [
+                    'status' => 0,
+                    'QTime' => (int) round((microtime(true) - $startTime) * 1000),
+                    'params' => [
+                        'term' => $term,
+                        'start' => $start,
+                        'rows' => $rows,
+                    ],
+                ],
+                'response' => [
+                    'numFound' => $numFound,
+                    'start' => $start,
+                    'docs' => $documents,
+                ],
+            ];
+
         } catch (Exception $e) {
             Log::error("Search error: " . $e->getMessage(), [
                 'exception' => $e,

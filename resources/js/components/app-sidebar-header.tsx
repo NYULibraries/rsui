@@ -144,7 +144,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                 <Input
                     ref={inputRef}
                     type="text"
-                    placeholder="Search packages..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={handleInputChange}
                     onKeyDown={handleInputKeyDown}

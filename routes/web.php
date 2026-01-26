@@ -71,6 +71,8 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
 
     Route::get('api/search/autocomplete', [SearchController::class, 'autocomplete'])->name('search.autocomplete');
 
+    Route::get('api/search', [SearchController::class, 'apisearch'])->name('search.apisearch');
+
 });
 
 Route::middleware('guest')->group(function () {
