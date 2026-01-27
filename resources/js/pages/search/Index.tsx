@@ -2,36 +2,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SearchResult, type SearchPageProps} from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Loader2, Package, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-
-interface SearchResult {
-    package_id: string;
-    package_name: string;
-    coll_code: string;
-    coll_id: string;
-    coll_display_code: string;
-    coll_rel_path: string;
-    coll_path: string;
-    package_type: string;
-    package_state: string;
-    partner_code: string;
-    partner_name: string;
-    package_path_url: string;
-}
-
-interface SearchPageProps {
-    term: string;
-    results: SearchResult[];
-    numFound: number;
-    start: number;
-    error?: string;
-    page?: number;
-    totalPages?: number;
-}
-
 
 export default function SearchIndex() {
 
@@ -45,10 +19,12 @@ export default function SearchIndex() {
       totalPages = 1,
     } = usePage<SearchPageProps>().props;
 
-
     const [searchTerm, setSearchTerm] = useState(term ?? '');
+
     const [searchResults, setSearchResults] = useState<SearchResult[]>(results ?? []);
+
     const [isLoading, setIsLoading] = useState(false);
+
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
     const from = numFound === 0 ? 0 : start + 1;
@@ -63,9 +39,11 @@ export default function SearchIndex() {
     ];
 
     const performSearch = (query: string, targetPage = 1) => {
+
         if (!query.trim()) return;
 
         setIsLoading(true);
+
         router.get(
             '/search',
             { term: query, page: targetPage },
@@ -74,6 +52,7 @@ export default function SearchIndex() {
                 onFinish: () => setIsLoading(false),
             },
         );
+
     };
 
     useEffect(() => {
@@ -174,6 +153,22 @@ export default function SearchIndex() {
                                         {r.package_name}
                                     </a>
                                 </div>
+
+                                {r.match_context && (
+                                    <div className="mt-2 flex gap-3">
+                                        <div
+                                            className="
+                                                text-sm
+                                                leading-relaxed
+                                                text-foreground
+                                                [&_em]:not-italic
+                                                [&_em]:font-semibold
+                                                [&_em]:text-primary
+                                            "
+                                            dangerouslySetInnerHTML={{ __html: r.match_context }}
+                                        />
+                                    </div>
+                                )}
 
                                 {/* Metadata */}
                                 <div className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">

@@ -39,7 +39,7 @@ export interface User {
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
- [key: string]: unknown; // This allows for additional properties...
+ [key: string]: unknown;
 }
 
 export interface Partner {
@@ -142,4 +142,31 @@ export interface FilePreviewDialogTriggerProps {
 
 export interface FilePreviewerProps {
   item?: FileItem;
+}
+
+interface SearchResult {
+    package_id: string;
+    package_name: string;
+    coll_code: string;
+    coll_id: string;
+    coll_display_code: string;
+    coll_rel_path: string;
+    coll_path: string;
+    package_type: string;
+    package_state: string;
+    partner_code: string;
+    partner_name: string;
+    package_path_url: string;
+    match_context?: string;
+}
+
+interface SearchPageProps {
+    term: string;
+    results: SearchResult[];
+    numFound: number;
+    start: number;
+    error?: string;
+    page?: number;
+    totalPages?: number;
+    [key: string]: unknown;
 }

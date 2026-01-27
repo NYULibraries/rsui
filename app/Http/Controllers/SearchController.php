@@ -25,7 +25,7 @@ class SearchController extends Controller
 
         $page = max(1, (int) $request->get('page', 1));
 
-        $rows = 10; // results per page (must match API)
+        $rows = 10;
 
         $docs = [];
 
@@ -39,23 +39,28 @@ class SearchController extends Controller
 
         if ($term !== '') {
             try {
-
                 $start = ($page - 1) * $rows;
 
-                $results =  $this->externalApiService->search($term, [ 'rows' => $rows, 'start' => $start, ]) ?? [];
+                // 1. Get the Resource Collection
+                $resource = $this->externalApiService->search($term, [
+                    'rows' => $rows,
+                    'start' => $start,
+                ]);
 
-                $response = $results['response'] ?? null;
+                if ($resource) {
+                    /**
+                     * 2. Extract data from the Resource.
+                     * Since we documented our Collection to have 'response' and 'responseHeader',
+                     * we turn the resource into an array to read those keys.
+                     */
+                    $data = $resource->toArray($request);
 
-                if ($response) {
+                    $numFound = $data['response']['numFound'] ?? 0;
 
-                    $numFound = (int) ($response['numFound'] ?? 0);
-
-                    $start = (int) ($response['start'] ?? $start);
-
-                    $docs = $response['docs'] ?? [];
+                    // 'docs' contains the transformed ExternalSearchResource items
+                    $docs = $data['response']['docs'] ?? [];
 
                     $totalPages = max(1, (int) ceil($numFound / $rows));
-
                 }
 
             } catch (\Throwable $e) {
@@ -73,7 +78,6 @@ class SearchController extends Controller
             'totalPages' => $totalPages,
             'error' => $error,
         ]);
-
     }
 
     public function apisearch(Request $request): JsonResponse
@@ -103,6 +107,7 @@ class SearchController extends Controller
 
     public function autocomplete(Request $request): JsonResponse
     {
+
         $term = $request->get('term', '');
 
         $error = null;
@@ -139,5 +144,6 @@ class SearchController extends Controller
             Log::error("Autocomplete error: " . $e->getMessage());
             return response()->json([]);
         }
+
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Resources\ExternalSearchCollection;
 
 use Exception;
 
@@ -17,7 +18,7 @@ class ExternalApiService
 
     public function __construct()
     {
-        $this->endpoint = config('services.rs.v1.endpoint');
+        $this->endpoint = rtrim(config('services.rs.v1.endpoint'), '/');
     }
 
    /**
@@ -449,59 +450,58 @@ class ExternalApiService
     /**
      * Search packages using the external API.
      *
-     * @param string $term The search term.
-     * @return array|null The API response data, or null on failure.
+     * This method queries the external service for packages matching the search term,
+     * tracks the execution time (QTime) to maintain Solr parity, and wraps the
+     * results in a ResourceCollection for standardized JSON transformation.
+     *
+     * @param string $term    The search term to query against the 'packages' scope.
+     * @param array  $options Additional query parameters (pagination, filters, etc.).
+     * @return ExternalSearchCollection|null The transformed collection of results or null on failure.
      */
-    public function search(string $term, array $options = []): ?array
+    public function search(string $term, array $options = []): ?ExternalSearchCollection
     {
-
+        // 1. Start timer to calculate search performance (QTime)
         $startTime = microtime(true);
 
         try {
-
-            $numFound = 0;
-
-            $start = 0;
-
-            $rows = 10;
-
-            $documents = [];
-
+            // 2. Execute the authenticated GET request to the search endpoint
             $response = $this->makeRequest('GET', "search?scope=packages&term=" . urlencode($term));
 
             $results = $response?->json();
 
-            if (!empty($results)) {
-                $numFound = $results['response']['numFound'];
-                $start = $results['response']['start'];
-                foreach ($results['response']['docs'] as $document) {
-                  $_doc = $document['package_search_response'];
-                  $_doc['package_path_url'] = str_replace($this->endpoint, '/', $_doc['package_path_url']);
-                  $documents[] = $_doc;
-                }
+            // 3. Return null if no response or empty data found
+            if (empty($results)) {
+                return null;
             }
 
-            return [
-                'responseHeader' => [
-                    'status' => 0,
-                    'QTime' => (int) round((microtime(true) - $startTime) * 1000),
-                    'params' => [
-                        'term' => $term,
-                        'start' => $start,
-                        'rows' => $rows,
-                    ],
-                ],
-                'response' => [
-                    'numFound' => $numFound,
-                    'start' => $start,
-                    'docs' => $documents,
-                ],
+            /**
+             * 4. Prepare Metadata
+             * We calculate qTime in milliseconds and extract pagination info
+             * from the external response to pass into the Collection wrapper.
+             */
+            $meta = [
+                'qTime'    => (int) round((microtime(true) - $startTime) * 1000),
+                'term'     => $term,
+                'start'    => $results['response']['start'] ?? 0,
+                'rows'     => $options['rows'] ?? 10,
+                'numFound' => $results['response']['numFound'] ?? 0,
             ];
 
+            /**
+             * 5. Transform and Wrap
+             * We convert the 'docs' array into a Laravel Collection and pass it
+             * to ExternalSearchCollection, which handles the final Solr-style nesting.
+             */
+            return new ExternalSearchCollection(
+                collect($results['response']['docs'] ?? []),
+                $meta
+            );
+
         } catch (Exception $e) {
+            // 6. Log the failure with context for debugging
             Log::error("Search error: " . $e->getMessage(), [
-                'exception' => $e,
                 'term' => $term,
+                'exception' => $e
             ]);
             return null;
         }
