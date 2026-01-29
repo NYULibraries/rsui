@@ -31,3 +31,4 @@ pnpm-workspace.yaml
 **/caddy
 frankenphp
 frankenphp-worker.php
+public/build
