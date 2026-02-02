@@ -102,8 +102,6 @@ class ExternalApiService
                 return $len;
             });
 
-            // LOG::info($responseHeaders);
-
             // Pass the derived filename to the StreamedResponse
             return new StreamedResponse(function () use ($ch) {
                 curl_exec($ch);

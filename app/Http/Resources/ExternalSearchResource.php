@@ -36,8 +36,6 @@ class ExternalSearchResource extends JsonResource
          */
         $endpoint = config('services.rs.v1.endpoint');
 
-        // match_path_url
-
         if (isset($data['match_path_url'])) {
             $data['match_path_url'] = str_replace($endpoint, '/', $data['match_path_url']);
         } else {

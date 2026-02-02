@@ -1,0 +1,51 @@
+name: Build and Release Laravel App
+
+on:
+  push:
+    tags:
+      - "v*" # Runs when you push tags like v1.0.1, v2.0.0
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install & Build Assets
+        run: |
+          pnpm install
+          pnpm run build
+
+      - name: Prepare Archive
+        run: |
+          # Remove heavy files not needed on your production server
+          rm -rf node_modules
+          rm -rf .github
+          rm -rf .git
+          rm -rf tests
+          # Create the tarball (the . stands for 'current directory')
+          tar -czf release.tar.gz .
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release.tar.gz
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
