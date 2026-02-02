@@ -32,3 +32,5 @@ pnpm-workspace.yaml
 frankenphp
 frankenphp-worker.php
 public/build
+*.backup
+*.bak*

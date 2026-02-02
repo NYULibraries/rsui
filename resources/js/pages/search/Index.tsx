@@ -1,29 +1,24 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { useInertiaErrorHandling } from '@/hooks/use-inertia-errors';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem, type SearchResult, type SearchPageProps} from '@/types';
+import { type BreadcrumbItem, type SearchPageProps, type SearchResult } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 export default function SearchIndex() {
+    useInertiaErrorHandling();
 
-    const {
-      term,
-      results,
-      numFound,
-      start,
-      error,
-      page = 1,
-      totalPages = 1,
-    } = usePage<SearchPageProps>().props;
+    const { term, results, numFound, start, error, page = 1, totalPages = 1 } = usePage<SearchPageProps>().props;
 
-    const [searchTerm, setSearchTerm] = useState(term ?? '');
+    const [searchTerm] = useState(term ?? '');
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>(results ?? []);
 
     const [isLoading, setIsLoading] = useState(false);
+
+    const [timeoutError, setTimeoutError] = useState<string | null>(null);
 
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
@@ -31,28 +26,43 @@ export default function SearchIndex() {
 
     const to = Math.min(start + searchResults.length, numFound);
 
-    const inputRef = useRef<HTMLInputElement>(null);
-
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Partners', href: '/' },
         { title: 'Search', href: '/search' },
     ];
 
     const performSearch = (query: string, targetPage = 1) => {
-
         if (!query.trim()) return;
 
         setIsLoading(true);
+        setTimeoutError(null);
+
+        const timeoutId = setTimeout(() => {
+            setTimeoutError(
+                'This search is taking longer than expected. The external API may be experiencing delays. Please try again or contact support if the issue persists.',
+            );
+            setIsLoading(false);
+        }, 15000); // 15 second timeout
 
         router.get(
             '/search',
             { term: query, page: targetPage },
             {
                 preserveState: true,
-                onFinish: () => setIsLoading(false),
+                onError: (errors) => {
+                    console.error('Search error:', errors);
+                    clearTimeout(timeoutId);
+                    setIsLoading(false);
+                },
+                onSuccess: () => {
+                    clearTimeout(timeoutId);
+                },
+                onFinish: () => {
+                    clearTimeout(timeoutId);
+                    setIsLoading(false);
+                },
             },
         );
-
     };
 
     useEffect(() => {
@@ -82,35 +92,36 @@ export default function SearchIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Search" />
 
-            <div
-                className="flex flex-col gap-6 px-6 py-4"
-                onKeyDown={handleResultKeyNav}
-                tabIndex={0}
-            >
-                {/* Search */}
-                <div className="w-full max-w-2xl">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            performSearch(searchTerm);
-                        }}
-                        className="relative"
-                    >
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-                        <Input
-                            ref={inputRef}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search..."
-                            className="h-12 pl-10 pr-10"
-                        />
-
-                        {isLoading && (
-                            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin" />
-                        )}
-                    </form>
-                </div>
+            <div className="flex flex-col gap-6 px-6 py-4" onKeyDown={handleResultKeyNav} tabIndex={0}>
+                {/* Timeout Error */}
+                {timeoutError && (
+                    <Card className="max-w-2xl border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start gap-3">
+                                <div className="text-orange-600 dark:text-orange-400">
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-medium text-orange-800 dark:text-orange-200">Search Taking Too Long</h3>
+                                    <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">{timeoutError}</p>
+                                    <button
+                                        onClick={() => performSearch(searchTerm, page)}
+                                        className="mt-3 rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Error */}
                 {error && (
@@ -135,20 +146,13 @@ export default function SearchIndex() {
                                 key={r.package_id}
                                 className={cn(
                                     'space-y-1 border-l-2 pl-4 transition-colors',
-                                    focusedIndex === index
-                                        ? 'border-primary bg-accent/30'
-                                        : 'border-transparent hover:border-primary/40',
+                                    focusedIndex === index ? 'border-primary bg-accent/30' : 'border-transparent hover:border-primary/40',
                                 )}
                             >
                                 {/* Index + title */}
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">
-                                        {index + 1}.
-                                    </span>
-                                    <a
-                                        href={`${r.package_path_url}`}
-                                        className="text-xl font-medium text-primary hover:underline"
-                                    >
+                                    <span className="text-xs text-muted-foreground">{index + 1}.</span>
+                                    <a href={`${r.package_path_url}`} className="text-xl font-medium text-primary hover:underline">
                                         {/* paths/01dcf840-93bf-4184-8ebe-b9ec3261015e/a190e05d-bf15-447f-8541-4548eb8592a5/xip/AV_20160119_5C8FB688-689F-4CA8-899D-14CF4C186755 */}
                                         {r.package_name}
                                     </a>
@@ -157,14 +161,7 @@ export default function SearchIndex() {
                                 {r.match_context && (
                                     <div className="mt-2 flex gap-3">
                                         <div
-                                            className="
-                                                text-sm
-                                                leading-relaxed
-                                                text-foreground
-                                                [&_em]:not-italic
-                                                [&_em]:font-semibold
-                                                [&_em]:text-primary
-                                            "
+                                            className="text-sm leading-relaxed text-foreground [&_em]:font-semibold [&_em]:text-primary [&_em]:not-italic"
                                             dangerouslySetInnerHTML={{ __html: r.match_context }}
                                         />
                                     </div>
@@ -173,9 +170,10 @@ export default function SearchIndex() {
                                 {/* Metadata */}
                                 <div className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">
                                     <span>Collection Code: {r.coll_display_code}</span>
-                                    <span>Partner Name: {r.partner_name} ({r.partner_code})</span>
+                                    <span>
+                                        Partner Name: {r.partner_name} ({r.partner_code})
+                                    </span>
                                 </div>
-
                             </div>
                         ))}
 
@@ -209,9 +207,7 @@ export default function SearchIndex() {
                 )}
 
                 {!isLoading && searchTerm && searchResults.length === 0 && !error && (
-                    <div className="text-muted-foreground">
-                        No results found for “{searchTerm}”
-                    </div>
+                    <div className="text-muted-foreground">No results found for "{searchTerm}"</div>
                 )}
             </div>
         </AppLayout>

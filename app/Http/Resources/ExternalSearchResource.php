@@ -67,4 +67,3 @@ class ExternalSearchResource extends JsonResource
         return $data;
     }
 }
-

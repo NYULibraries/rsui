@@ -1,10 +1,10 @@
+import HeadingSmall from '@/components/heading-small';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Appearance, useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
 import { LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
 import { HTMLAttributes } from 'react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import HeadingSmall from '@/components/heading-small';
 
 export default function AppearanceToggleTab({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
     const { appearance, updateAppearance, collectionDetailsCollapsed, updateCollectionDetailsCollapsed } = useAppearance();

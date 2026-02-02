@@ -38,7 +38,6 @@ const formatContent = (content: string, type: string): string => {
                 }
             });
             return result.trim();
-
         }
     } catch (e: unknown) {
         const message = e instanceof Error ? e.message : String(e);

@@ -1,12 +1,12 @@
-import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { Head, useForm } from '@inertiajs/react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 type LoginForm = {
     email: string;
@@ -97,7 +97,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                         Log in
                     </Button>
-
                 </div>
             </form>
 

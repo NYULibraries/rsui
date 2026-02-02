@@ -51,12 +51,12 @@ const getAppearanceSettings = (): AppearanceSettings => {
                 collectionDetailsCollapsed: typeof parsed.collectionDetailsCollapsed === 'boolean' ? parsed.collectionDetailsCollapsed : true,
             };
         } catch (e) {
-            console.error("Failed to parse appearance settings from localStorage", e);
+            console.error('Failed to parse appearance settings from localStorage', e);
             return { theme: 'system', collectionDetailsCollapsed: true };
         }
     }
     return { theme: 'system', collectionDetailsCollapsed: true };
-}
+};
 
 const handleSystemThemeChange = () => {
     const settings = getAppearanceSettings();
@@ -73,7 +73,7 @@ export function useAppearance() {
     const [settings, setSettings] = useState<AppearanceSettings>({ theme: 'system', collectionDetailsCollapsed: true });
 
     const updateAppearance = useCallback((theme: Appearance) => {
-        setSettings(prev => {
+        setSettings((prev) => {
             const newSettings = { ...prev, theme };
             localStorage.setItem('appearance_settings', JSON.stringify(newSettings));
             setCookie('appearance', theme); // for SSR
@@ -83,7 +83,7 @@ export function useAppearance() {
     }, []);
 
     const updateCollectionDetailsCollapsed = useCallback((collapsed: boolean) => {
-        setSettings(prev => {
+        setSettings((prev) => {
             const newSettings = { ...prev, collectionDetailsCollapsed: collapsed };
             localStorage.setItem('appearance_settings', JSON.stringify(newSettings));
             return newSettings;

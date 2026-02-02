@@ -1,7 +1,7 @@
+import { Button } from '@/components/ui/button';
 import { Dialog, Transition } from '@headlessui/react';
 import { CheckCircle } from 'lucide-react';
 import { Fragment, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 
 export function SuccessModal({
     open,
@@ -48,14 +48,10 @@ export function SuccessModal({
                         leaveFrom="opacity-100 scale-100"
                         leaveTo="opacity-0 scale-95"
                     >
-                        <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 text-center shadow-xl border border-zinc-200 dark:border-zinc-700">
-                            <CheckCircle className="mx-auto text-green-500 w-10 h-10 mb-2" />
-                            <Dialog.Title className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                Success
-                            </Dialog.Title>
-                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                {message}
-                            </div>
+                        <Dialog.Panel className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                            <CheckCircle className="mx-auto mb-2 h-10 w-10 text-green-500" />
+                            <Dialog.Title className="text-lg font-semibold text-gray-800 dark:text-gray-100">Success</Dialog.Title>
+                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{message}</div>
                             <div className="mt-4">
                                 <Button variant="outline" onClick={onClose}>
                                     Close

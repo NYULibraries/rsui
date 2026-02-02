@@ -1,7 +1,7 @@
+import { Button } from '@/components/ui/button';
 import { Dialog, Transition } from '@headlessui/react';
 import { AlertTriangle } from 'lucide-react';
 import { Fragment, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 
 export function ErrorModal({
     open,
@@ -48,14 +48,10 @@ export function ErrorModal({
                         leaveFrom="opacity-100 scale-100"
                         leaveTo="opacity-0 scale-95"
                     >
-                        <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 text-center shadow-xl border border-red-300 dark:border-red-700">
-                            <AlertTriangle className="mx-auto text-red-500 w-10 h-10 mb-2" />
-                            <Dialog.Title className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                Error
-                            </Dialog.Title>
-                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                {message}
-                            </div>
+                        <Dialog.Panel className="w-full max-w-sm rounded-2xl border border-red-300 bg-white p-6 text-center shadow-xl dark:border-red-700 dark:bg-zinc-900">
+                            <AlertTriangle className="mx-auto mb-2 h-10 w-10 text-red-500" />
+                            <Dialog.Title className="text-lg font-semibold text-gray-800 dark:text-gray-100">Error</Dialog.Title>
+                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">{message}</div>
                             <div className="mt-4">
                                 <Button variant="outline" onClick={onClose}>
                                     Close

@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Toaster, toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import type { FilePreviewerProps } from '@/types';
-import formatContent from '@/lib/formatContent';
 import BasicAudioPlayer from '@/components/BasicAudioPlayer';
 import BasicVideoPlayer from '@/components/BasicVideoPlayer';
+import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import formatContent from '@/lib/formatContent';
+import type { FilePreviewerProps } from '@/types';
+import { Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Toaster, toast } from 'sonner';
 
 const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
-
     const [fileContent, setFileContent] = useState<string>('');
     const [fileType, setFileType] = useState<string>(''); // 'json', 'xml', 'text', 'audio', 'video', or empty
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -58,11 +57,10 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
 
                 const content = await response.text();
                 setFileContent(content);
-
             } catch (e: unknown) {
                 const message = e instanceof Error ? e.message : String(e);
                 setError(`Failed to load file: ${message}`);
-                toast.error("Failed to load file.", {
+                toast.error('Failed to load file.', {
                     description: message,
                 });
                 setFileContent('');
@@ -82,16 +80,12 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
             <Card className="rounded-lg shadow-lg">
                 <CardContent className="p-6">
                     {isLoading && (
-                        <div className="flex items-center justify-center min-h-[200px] text-gray-500">
+                        <div className="flex min-h-[200px] items-center justify-center text-gray-500">
                             <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                             Loading file content...
                         </div>
                     )}
-                    {error && (
-                        <div className="text-red-600 text-center py-4">
-                            Error: {error}
-                        </div>
-                    )}
+                    {error && <div className="py-4 text-center text-red-600">Error: {error}</div>}
                     {!isLoading && !error && (
                         <>
                             {fileType === 'audio' && fileUrl ? (
@@ -99,20 +93,22 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
                             ) : fileType === 'video' && fileUrl ? (
                                 <BasicVideoPlayer src={fileUrl} type={item?.mime_type || 'video/mp4'} />
                             ) : fileContent ? (
-                                <div className="relative border border-gray-300 rounded-md overflow-hidden">
+                                <div className="relative overflow-hidden rounded-md border border-gray-300">
                                     <Textarea
                                         value={formatContent(fileContent, fileType)}
                                         readOnly
-                                        className="w-full font-mono text-sm resize-none min-h-[400px] p-4 bg-gray-50 text-gray-900 border-none focus-visible:ring-0"
+                                        className="min-h-[400px] w-full resize-none border-none bg-gray-50 p-4 font-mono text-sm text-gray-900 focus-visible:ring-0"
                                         aria-label="File content preview"
                                         spellCheck="false"
                                     />
                                 </div>
-                            ) : item?.download_url && (
-                                <div className="text-gray-500 text-center py-4">
-                                    No content found at the provided URL or content is empty.
-                                    {(fileType === 'audio' || fileType === 'video') && " (Media will attempt to stream directly.)"}
-                                </div>
+                            ) : (
+                                item?.download_url && (
+                                    <div className="py-4 text-center text-gray-500">
+                                        No content found at the provided URL or content is empty.
+                                        {(fileType === 'audio' || fileType === 'video') && ' (Media will attempt to stream directly.)'}
+                                    </div>
+                                )
                             )}
                         </>
                     )}

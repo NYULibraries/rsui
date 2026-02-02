@@ -1,15 +1,15 @@
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { ErrorModal } from '@/components/error-modal';
 import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
+import { SuccessModal } from '@/components/success-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { SuccessModal } from '@/components/success-modal';
-import { ErrorModal } from '@/components/error-modal';
+import { type BreadcrumbItem } from '@/types';
+import { Head, useForm } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -129,7 +129,7 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                 >
                                     {showCurrentPassword ? 'Hide' : 'Show'}
@@ -155,7 +155,7 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? 'Hide' : 'Show'}
@@ -181,7 +181,7 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                                     onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
                                 >
                                     {showPasswordConfirmation ? 'Hide' : 'Show'}

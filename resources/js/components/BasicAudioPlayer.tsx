@@ -7,15 +7,15 @@ const BasicAudioPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
         try {
             return src;
         } catch (e) {
-            console.error("Invalid audio source URL:", src, e);
-            toast.error("Invalid audio source URL.", { description: "The audio file link is malformed." });
+            console.error('Invalid audio source URL:', src, e);
+            toast.error('Invalid audio source URL.', { description: 'The audio file link is malformed.' });
             return ''; // Return empty string if invalid
         }
     }, [src]);
 
     if (!audioSrc) {
         return (
-            <div className="flex flex-col items-center justify-center p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+            <div className="flex flex-col items-center justify-center rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
                 <p>Cannot play audio: Invalid source URL.</p>
             </div>
         );
@@ -28,7 +28,8 @@ const BasicAudioPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
                 Your browser does not support the audio element.
             </audio>
             <p className="mt-2 text-sm text-gray-600">
-                File Type: {type || 'Unknown'}{src.startsWith('blob:') && ' (Streaming)'}
+                File Type: {type || 'Unknown'}
+                {src.startsWith('blob:') && ' (Streaming)'}
             </p>
         </div>
     );

@@ -24,7 +24,6 @@ const mainNavItems: NavItem[] = [
 ];
 
 const rightNavItems: NavItem[] = [
-
     {
         title: 'NYU Digital Library Technology Services',
         href: 'https://wp.nyu.edu/library-dlts/',
@@ -69,7 +68,6 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                                 </Link>
                                             ))}
                                         </div>
-
                                         <div className="flex flex-col space-y-4">
                                             {rightNavItems.map((item) => (
                                                 <a
@@ -89,11 +87,9 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </SheetContent>
                         </Sheet>
                     </div>
-
                     <Link href="/dashboard" prefetch className="flex items-center space-x-2">
                         <AppLogo />
                     </Link>
-
                     {/* Desktop Navigation */}
                     <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
                         <NavigationMenu className="flex h-full items-stretch">
@@ -119,7 +115,6 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </NavigationMenuList>
                         </NavigationMenu>
                     </div>
-
                     <div className="ml-auto flex items-center space-x-2">
                         <div className="relative flex items-center space-x-1">
                             <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">

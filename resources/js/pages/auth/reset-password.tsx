@@ -28,7 +28,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
         password_confirmation: '',
     });
 
-   console.log(processing);
+    console.log(processing);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
