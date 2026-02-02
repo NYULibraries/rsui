@@ -151,7 +151,7 @@ export default function SearchIndex() {
                             >
                                 {/* Index + title */}
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">{index + 1}.</span>
+                                    <span className="text-xs text-muted-foreground">{start + index + 1}.</span>
                                     <a href={`${r.package_path_url}`} className="text-xl font-medium text-primary hover:underline">
                                         {/* paths/01dcf840-93bf-4184-8ebe-b9ec3261015e/a190e05d-bf15-447f-8541-4548eb8592a5/xip/AV_20160119_5C8FB688-689F-4CA8-899D-14CF4C186755 */}
                                         {r.package_name}
