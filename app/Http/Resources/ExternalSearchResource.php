@@ -14,6 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ExternalSearchResource extends JsonResource
 {
+
     /**
      * Transform the raw external API response into a standardized array.
      *
@@ -35,10 +36,12 @@ class ExternalSearchResource extends JsonResource
          */
         $endpoint = config('services.rs.v1.endpoint');
 
-        if (isset($data['package_path_url'])) {
-            $data['package_path_url'] = str_replace($endpoint, '/', $data['package_path_url']);
+        // match_path_url
+
+        if (isset($data['match_path_url'])) {
+            $data['match_path_url'] = str_replace($endpoint, '/', $data['match_path_url']);
         } else {
-            $data['package_path_url'] = null;
+            $data['match_path_url'] = null;
         }
 
         /**

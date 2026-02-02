@@ -158,6 +158,7 @@ interface SearchResult {
     partner_name: string;
     package_path_url: string;
     match_context?: string;
+    match_path_url: string;
 }
 
 interface SearchPageProps {
