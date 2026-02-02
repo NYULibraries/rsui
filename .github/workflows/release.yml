@@ -3,7 +3,7 @@ name: Build and Release Laravel App
 on:
   push:
     tags:
-      - "v*" # Runs when you push tags like v1.0.1, v2.0.0
+      - "v*"
 
 jobs:
   create-release:
@@ -15,6 +15,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 1. Setup PHP 8.2 (Matches your host)
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, curl, libxml, zip, bcmath, gd
+          tools: composer:v2
+
+      - name: Install PHP Dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction
+
+      # 2. Setup Node 22 & Build Assets
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -31,14 +44,26 @@ jobs:
           pnpm install
           pnpm run build
 
+      # 3. Verify public/build (Where Vite puts files)
+      - name: Verify Build Assets
+        run: |
+          if [ -d "public/build" ]; then
+            echo "✅ Assets found in public/build"
+            ls -la public/build
+          else
+            echo "❌ ERROR: public/build not found. Assets failed to compile."
+            exit 1
+          fi
+
+      # 4. Cleanup & Packaging
       - name: Prepare Archive
         run: |
-          # Remove heavy files not needed on your production server
+          # Remove dev-only folders to keep the release small
           rm -rf node_modules
           rm -rf .github
           rm -rf .git
           rm -rf tests
-          # Create the tarball (the . stands for 'current directory')
+          # Package the app (including the 'vendor' and 'public/build' folders)
           tar -czf release.tar.gz .
 
       - name: Upload to GitHub Release
@@ -46,6 +71,5 @@ jobs:
         with:
           files: release.tar.gz
           generate_release_notes: true
-          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
