@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { router } from '@inertiajs/react';
-import axios from 'axios';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SESSION_LIFETIME_MINUTES = parseInt(import.meta.env.VITE_SESSION_LIFETIME || '25', 10);
@@ -76,11 +76,14 @@ export function SessionManager() {
         };
     }, [resetTimers]);
 
-    const handleKeepAlive = () => {
+    const handleKeepAlive = async () => {
         // Make a small request to keep the session alive on the backend
-        axios.post('/ping').then(() => {
+        try {
+            await fetch('/ping', { method: 'POST' });
             resetTimers();
-        });
+        } catch (error) {
+            console.error('Failed to keep session alive:', error);
+        }
     };
 
     return (
