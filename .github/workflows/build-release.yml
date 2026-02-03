@@ -1,0 +1,84 @@
+name: Build and Release RSUI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # PHP setup
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, curl, libxml, zip, bcmath, gd, pdo_sqlite, xsl
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      # Node / pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install & build assets
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      # Verify build output
+      - name: Verify build assets
+        run: |
+          test -d public/build || (echo "public/build missing" && exit 1)
+          ls -la public/build
+
+      # Package release
+      - name: Prepare archive
+        run: |
+          rm -rf node_modules .github .git tests
+          rm -rf storage/framework/{cache,sessions,views}/*
+          rm -rf storage/logs/*
+          rm -f .env
+
+          mkdir -p storage/framework/{cache,sessions,views}
+          mkdir -p storage/logs bootstrap/cache
+          chmod -R 755 storage bootstrap/cache
+
+          tar -czf release.tar.gz \
+            --exclude='.env' \
+            --exclude='*.tar.gz' \
+            .
+
+      # Upload release
+      - name: Upload GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
