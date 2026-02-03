@@ -2,21 +2,17 @@ name: Build and Release RSUI
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*"
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # PHP
+      # 1. Setup PHP 8.2 and Install Dependencies
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -31,78 +27,98 @@ jobs:
           key: composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: composer-
 
-      - name: Install PHP dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+      - name: Install PHP Dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-      # Node / pnpm
+      # 2. Setup Node 22 & Build Assets
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Setup Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: 'pnpm'
 
-      - name: Install & build assets
+      - name: Install & Build Assets
         run: |
           pnpm install --frozen-lockfile
           pnpm run build
 
-      # Verify assets
-      - name: Verify build assets
+      # 3. Verify build outputs
+      - name: Verify Build Assets
         run: |
-          test -d public/build || (echo "❌ public/build missing" && exit 1)
-          ls -la public/build
-
-      # Package (safe)
-      - name: Prepare archive
-        run: |
-          set -euo pipefail
-          echo "Working dir: $(pwd)"
-          echo "Contents before archive:"
-          ls -la
-
-          # Create release tarball first (exclude patterns for things we don't want)
-          tar --warning=no-file-changed -czf release.tar.gz \
-            --exclude='.env' \
-            --exclude='*.tar.gz' \
-            --exclude='storage/logs/*' \
-            --exclude='storage/framework/cache/*' \
-            --exclude='storage/framework/sessions/*' \
-            --exclude='storage/framework/views/*' \
-            --exclude='bootstrap/cache/*.php' \
-            --exclude='node_modules/*' \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='tests' \
-            .
-          tar_exit=$?
-          echo "tar exit code: $tar_exit"
-          ls -lh release.tar.gz || true
-          if [ "$tar_exit" -ne 0 ]; then
-            echo "❌ tar failed"
-            exit $tar_exit
+          if [ -d "public/build" ]; then
+            echo "✅ Assets found in public/build"
+            ls -la public/build
+          else
+            echo "❌ ERROR: public/build not found. Assets failed to compile."
+            exit 1
           fi
 
-          # Optional: remove unneeded folders after archive creation
-          rm -rf node_modules tests
-          rm -rf storage/framework/{cache,sessions,views}/*
-          rm -rf storage/logs/*
-          rm -f .env
-
+      # 4. Cleanup & Packaging
+      - name: Prepare Archive
+        run: |
+          # Create necessary directories for Laravel
           mkdir -p storage/framework/{cache,sessions,views}
-          mkdir -p storage/logs bootstrap/cache
-          chmod -R 755 storage bootstrap/cache
-        shell: bash
+          mkdir -p storage/logs
+          mkdir -p bootstrap/cache
 
-      # Release
-      - name: Upload GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release.tar.gz
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set proper permissions
+          chmod -R 755 storage bootstrap/cache
+
+          # Remove dev files
+          rm -rf node_modules .git .github tests
+
+          # Create archive in parent directory to avoid the "file changed" error
+          cd ..
+          tar -czf release.tar.gz \
+            --exclude='rsui/.env' \
+            --exclude='rsui/composer.lock' \
+            --exclude='rsui/storage/logs' \
+            --exclude='rsui/storage/framework/cache' \
+            --exclude='rsui/storage/framework/sessions' \
+            --exclude='rsui/storage/framework/views' \
+            --exclude='rsui/bootstrap/cache/*.php' \
+            --exclude='rsui/node_modules' \
+            --exclude='rsui/.git' \
+            --exclude='rsui/.github' \
+            --exclude='rsui/tests' \
+            --exclude='rsui/.pnpm-store' \
+            --exclude='rsui/.devcontainer' \
+            --exclude='rsui/docker' \
+            --exclude='rsui/docker-compose.yml' \
+            --exclude='rsui/Dockerfile' \
+            --exclude='rsui/.dockerignore' \
+            --exclude='rsui/.editorconfig' \
+            --exclude='rsui/.gemini' \
+            --exclude='rsui/GEMINI.md' \
+            --exclude='rsui/.gitattributes' \
+            --exclude='rsui/.gitignore' \
+            --exclude='rsui/opencode.json' \
+            --exclude='rsui/pnpm-lock.yaml' \
+            --exclude='rsui/.prettierignore' \
+            --exclude='rsui/.prettierrc' \
+            --exclude='rsui/README.md' \
+            --exclude='rsui/tsconfig.json' \
+            --exclude='rsui/boost.json' \
+            --exclude='rsui/vite.config.ts' \
+            --exclude='rsui/AGENTS.md' \
+            rsui/
+
+          # Move it back
+          mv release.tar.gz rsui/
+          cd rsui
+
+      # - name: Upload to GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: release.tar.gz
+      #     generate_release_notes: true
+      #     draft: false
+      #     prerelease: false
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
