@@ -38,3 +38,7 @@ Thumbs.db
 # Docker
 .dockerignore
 Dockerfile.dev
+node_modules/
+npm-debug.log
+.git/
+.env
