@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # PHP setup
+      # PHP
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -51,13 +51,13 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run build
 
-      # Verify build output
+      # Verify assets
       - name: Verify build assets
         run: |
-          test -d public/build || (echo "public/build missing" && exit 1)
+          test -d public/build || (echo "❌ public/build missing" && exit 1)
           ls -la public/build
 
-      # Package release
+      # Package (safe)
       - name: Prepare archive
         run: |
           rm -rf node_modules .github .git tests
@@ -69,12 +69,17 @@ jobs:
           mkdir -p storage/logs bootstrap/cache
           chmod -R 755 storage bootstrap/cache
 
-          tar -czf release.tar.gz \
+          tar --warning=no-file-changed -czf release.tar.gz \
             --exclude='.env' \
             --exclude='*.tar.gz' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='bootstrap/cache/*.php' \
             .
 
-      # Upload release
+      # Release
       - name: Upload GitHub Release
         uses: softprops/action-gh-release@v2
         with:
