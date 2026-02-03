@@ -1,4 +1,4 @@
-name: Build and Release RSUI App
+name: Build and Release Laravel App
 on:
   push:
     tags:
@@ -85,10 +85,14 @@ jobs:
           chmod -R 755 storage bootstrap/cache
 
           # Package the app (including 'vendor' and 'public/build' folders)
-          tar -czf release.tar.gz \
+          tar -czf ../release.tar.gz \
             --exclude='.env' \
             --exclude='composer.lock' \
+            --exclude='*.tar.gz' \
             .
+
+          # Move archive back to current directory
+          mv ../release.tar.gz .
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
