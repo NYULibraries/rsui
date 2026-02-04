@@ -121,6 +121,7 @@ jobs:
             --exclude='rsui/tsconfig.json' \
             --exclude='rsui/boost.json' \
             --exclude='rsui/vite.config.ts' \
+            --exclude='rsui/public/vendor/telescope' \
             --exclude='rsui/AGENTS.md' \
             rsui/
 
