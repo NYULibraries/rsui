@@ -148,7 +148,7 @@ export function PartnersTable({ partners }: PartnersTableProps) {
             },
             sorting: [
                 {
-                    id: 'name',
+                    id: 'code',
                     desc: false,
                 },
             ],

@@ -145,7 +145,7 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
             columnOrder: ['name', 'code'],
             sorting: [
                 {
-                    id: 'name',
+                    id: 'code',
                     desc: false,
                 },
             ],
