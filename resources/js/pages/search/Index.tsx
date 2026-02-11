@@ -152,7 +152,7 @@ export default function SearchIndex() {
                                 {/* Index + title */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground">{start + index + 1}.</span>
-                                    <a href={`${r.package_path_url}`} className="text-xl font-medium text-primary hover:underline">
+                                    <a href={`${r.match_path_url}`} className="text-xl font-medium text-primary hover:underline">
                                         {r.package_name}
                                     </a>
                                 </div>
