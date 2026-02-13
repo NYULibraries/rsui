@@ -82,7 +82,7 @@ class ExternalApiService
             $requestHeaders = [
                 'Accept-Encoding: gzip, deflate, br',
                 'Connection: keep-alive',
-                'User-Agent: RSUI/1.0 (dlts@nyu.edu)',
+                'User-Agent: RSUI/' . config('app.version') . ' (dlts@nyu.edu)',
                 'Accept: */*',
                 "Cookie: Authorization={$cookie}",
             ];
@@ -137,38 +137,40 @@ class ExternalApiService
      */
     public function getPath(string $path): ?array
     {
+        $sanitizedPath = trim($path);
 
-        $pathSegments = explode('/', $path);
-
-        $cleanedSegments = [];
-
-        foreach ($pathSegments as $segment) {
-            $cleanedSegments[] = preg_replace('/[^a-zA-Z0-9\._-]/', '', $segment);
-        }
-
-        $sanitizedPath = implode('/', array_filter($cleanedSegments));
-
-        // After sanitation, you might want to ensure it's not empty
         if (empty($sanitizedPath)) {
             abort(404, 'Invalid file path.');
         }
 
         $response = $this->makeRequest('GET', $sanitizedPath);
 
+        if (!$response || $response->failed()) {
+            return null;
+        }
+
         $data = $response->json();
 
+        if (!is_array($data)) {
+            return null;
+        }
+
         $data['url'] = "/fs/{$sanitizedPath}";
-        if (isset($data['children'])) {
-            foreach ($data['children'] as $index => $child) {
-                if (isset($data['children'][$index]['url'])) {
-                    $data['children'][$index]['url'] = str_replace($this->endpoint, '/fs/', $data['children'][$index]['url']);
+
+        if (isset($data['children']) && is_array($data['children'])) {
+            $data['children'] = collect($data['children'])->map(function ($child) {
+                if (isset($child['url'])) {
+                    $child['url'] = str_replace($this->endpoint, '/fs', $child['url']);
                 }
-                if (isset($data['children'][$index]['download_url'])) {
-                    $download_url = $data['children'][$index]['download_url'];
-                    $data['children'][$index]['download_url'] = str_replace($this->endpoint, '/download/', $download_url);
-                    $data['children'][$index]['preview_url'] = str_replace($this->endpoint, '/preview/', $download_url);
+
+                if (isset($child['download_url'])) {
+                    $downloadUrl = $child['download_url'];
+                    $child['download_url'] = str_replace($this->endpoint, '/download/', $downloadUrl);
+                    $child['preview_url'] = str_replace($this->endpoint, '/preview/', $downloadUrl);
                 }
-            }
+
+                return $child;
+            })->all();
         }
 
         return $data;
@@ -296,73 +298,53 @@ class ExternalApiService
      * @param  array  $options  Additional Guzzle request options.
      * @return \Illuminate\Http\Client\Response|null The Laravel HTTP client response, or null on error.
      */
-    protected function makeRequest(string $method, string $path, array $options = [], bool $useCache = true, int $cacheMinutes = 10): ?Response
-    {
-        try {
+protected function makeRequest(string $method, string $path, array $options = [], bool $useCache = true, int $cacheMinutes = 10): ?Response
+{
+    try {
+        $this->validateSession();
 
-            $this->validateSession();
+        $sessionId = session()->getId();
 
-            // Generate a cache key that is unique to the user and the request
-            // We'll use the session ID to tie the cache to the user's session.
-            // Also include method, path, and a hash of options to ensure unique requests have unique cache keys.
-            $sessionId = session()->getId();
+        $cacheKey = "api_cache:" . sha1($sessionId . $method . $path . serialize($options));
 
-            $cacheKey = "external_api:user_{$sessionId}:{$method}:{$path}:".md5(json_encode($options));
-
-            // if ($useCache && Cache::has($cacheKey)) {
-            //     // Return cached response if it exists and caching is enabled
-            //     return Cache::get($cacheKey);
-            // }
-
-            $cookie = session('external_auth_cookie');
-
-            if (! $cookie) {
-                // Throw an exception indicating an authentication issue
-                // @TODO: Create a custom exception like AuthenticationException
-                throw new Exception('External authentication cookie not found in session.');
-            }
-
-            $domain = parse_url($this->endpoint, PHP_URL_HOST);
-
-            Log::info("makeRequest Url: {$this->endpoint}{$path}");
-
-            $response = Http::baseUrl($this->endpoint)
-                ->withCookies([
-                    'Authorization' => $cookie,
-                ], $domain)
-                ->withHeaders([
-                    'User-Agent' => 'RSUI/1.0 (dlts@nyu.edu)',
-                    'Accept' => 'application/json',
-                ])
-                ->send($method, $path, $options);
-
-            if ($response->failed()) {
-
-                Log::error("External API request failed for {$path}", [
-                    'url' => "{$this->endpoint}{$path}",
-                    'status' => $response->status(),
-                ]);
-
-                throw new Exception("External API request failed for {$path}");
-            }
-
-            $this->updateAuthCookieFromResponse($response);
-
-            if ($useCache) {
-                // Cache the response if caching is enabled
-                Cache::put($cacheKey, $response, now()->addMinutes($cacheMinutes));
-            }
-
-            return $response;
-
-        } catch (Exception $e) {
-            Log::error('External API connection error: '.$e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            return null;
+        if ($useCache && $cached = Cache::get($cacheKey)) {
+            return $cached;
         }
+
+        $cookie = session('external_auth_cookie');
+        if (!$cookie) {
+            throw new Exception('External authentication cookie missing.');
+        }
+
+        $domain = parse_url($this->endpoint, PHP_URL_HOST);
+
+        // 3. Make the Request
+        $response = Http::baseUrl($this->endpoint)
+            ->withCookies(['Authorization' => $cookie], $domain)
+            ->withHeaders([
+                'User-Agent' => 'RSUI/' . config('app.version'). ' (dlts@nyu.edu)',
+                'Accept' => 'application/json',
+            ])
+            ->timeout(10)
+            ->send($method, $path, $options);
+
+        Log::info($response);
+
+        $response->throw();
+
+        $this->updateAuthCookieFromResponse($response);
+
+        if ($useCache) {
+            Cache::put($cacheKey, $response, now()->addMinutes($cacheMinutes));
+        }
+
+        return $response;
+
+    } catch (Exception $e) {
+        Log::error("API Error [{$method} {$path}]: " . $e->getMessage());
+        return null;
     }
+}
 
     /**
      * Update the authentication cookie from the response.
@@ -479,7 +461,7 @@ class ExternalApiService
             }
 
             // 3. Execute authenticated GET request to search endpoint with all parameters
-            $response = $this->makeRequest('GET', 'search?'.http_build_query($queryParams));
+            $response = $this->makeRequest('GET', 'search?' . http_build_query($queryParams));
 
             $results = $response?->json();
 
