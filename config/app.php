@@ -123,6 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'version' => 'v1.0.9-dev.5',
-
+    'version' => 'rsui-v1.0.9-dev.7',
+    //@TODO: Display X-Rsbe-Api-Version, X-Rsbe-App-Version
 ];

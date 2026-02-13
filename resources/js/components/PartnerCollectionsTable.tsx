@@ -142,10 +142,10 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
             globalFilter,
         },
         initialState: {
-            columnOrder: ['name', 'code'],
+            columnOrder: ['name', 'display_code'],
             sorting: [
                 {
-                    id: 'code',
+                    id: 'display_code',
                     desc: false,
                 },
             ],
