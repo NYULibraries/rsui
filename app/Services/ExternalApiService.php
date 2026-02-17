@@ -305,13 +305,14 @@ protected function makeRequest(string $method, string $path, array $options = []
 
         $sessionId = session()->getId();
 
-        $cacheKey = "api_cache:" . sha1($sessionId . $method . $path . serialize($options));
+        // $cacheKey = "api_cache:" . sha1($sessionId . $method . $path . serialize($options));
 
-        if ($useCache && $cached = Cache::get($cacheKey)) {
-            return $cached;
-        }
+        // if ($useCache && $cached = Cache::get($cacheKey)) {
+        //     return $cached;
+        // }
 
         $cookie = session('external_auth_cookie');
+
         if (!$cookie) {
             throw new Exception('External authentication cookie missing.');
         }
@@ -334,9 +335,9 @@ protected function makeRequest(string $method, string $path, array $options = []
 
         $this->updateAuthCookieFromResponse($response);
 
-        if ($useCache) {
-            Cache::put($cacheKey, $response, now()->addMinutes($cacheMinutes));
-        }
+        // if ($useCache) {
+        //     Cache::put($cacheKey, $response, now()->addMinutes($cacheMinutes));
+        // }
 
         return $response;
 
