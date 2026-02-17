@@ -329,7 +329,7 @@ protected function makeRequest(string $method, string $path, array $options = []
             ->timeout(10)
             ->send($method, $path, $options);
 
-        Log::info($response);
+        // Log::info($response);
 
         $response->throw();
 
