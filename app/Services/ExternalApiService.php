@@ -303,7 +303,7 @@ protected function makeRequest(string $method, string $path, array $options = []
     try {
         $this->validateSession();
 
-        $sessionId = session()->getId();
+        // $sessionId = session()->getId();
 
         // $cacheKey = "api_cache:" . sha1($sessionId . $method . $path . serialize($options));
 
