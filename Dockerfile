@@ -1,5 +1,5 @@
-# Use the official PHP 8.4 image
-FROM php:8.4-fpm
+# Use the official PHP 8.2 Apache image
+FROM php:8.2-apache
 
 # Set working directory
 WORKDIR /var/www/html
@@ -12,31 +12,21 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    libsqlite3-dev \
+    libxslt1-dev \
     zip \
     unzip \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
-    libmcrypt-dev \
-    libreadline-dev \
-    libssl-dev \
-    libxslt1-dev \
-    supervisor \
-    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install \
-    pdo_mysql \
     pdo_sqlite \
-    pdo_pgsql \
     bcmath \
     ctype \
-    json \
     mbstring \
-    openssl \
-    tokenizer \
     xml \
-    curl \
     zip \
     gd \
     xsl \
@@ -45,38 +35,32 @@ RUN docker-php-ext-install \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install Node.js and npm
-COPY --from=node:20 /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:20 /usr/local/bin/npm /usr/local/bin/npm
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
 # Copy existing application directory permissions
 COPY --chown=www-data:www-data . /var/www/html
 
-# Install PHP dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Install PHP dependencies (update lock file for PHP 8.2, skip scripts during build)
+RUN rm -f composer.lock && \
+    composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
-# Install Node dependencies
-RUN npm install
-
-# Build frontend assets
-RUN npm run build
+# Set permissions
+RUN mkdir -p /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Expose ports
-EXPOSE 9000
+# Copy Apache configuration
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Configure PHP-FPM
-RUN sed -i "s/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/" /usr/local/etc/php-fpm.d/www.conf
+# Expose port 80
+EXPOSE 80
 
-# Configure Nginx
-COPY docker/nginx.conf /etc/nginx/sites-available/default
-
-# Create supervisor configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start Apache
+CMD ["apache2-foreground"]
