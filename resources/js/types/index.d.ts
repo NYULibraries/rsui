@@ -97,6 +97,38 @@ export interface PartnersTableProps {
     partners: Partner[];
 }
 
+export interface WorkflowParameterOption {
+    value: string;
+    description?: string;
+}
+
+export interface WorkflowParameter {
+    name: string;
+    provided_by: 'context' | 'user';
+    binding?: string;
+    label?: string;
+    type?: string;
+    required?: boolean;
+    options?: Array<string | WorkflowParameterOption>;
+    pattern?: string;
+    help?: string;
+}
+
+export interface Workflow {
+    workflow_id: string;
+    version: string;
+    description: string;
+    applies_to: {
+        object_types: Array<'file' | 'directory'>;
+    };
+    parameters: WorkflowParameter[];
+}
+
+export interface AvailableWorkflows {
+    directory?: Workflow[];
+    file?: Workflow[];
+}
+
 export interface FileItem {
     name: string;
     extension: string;
@@ -114,6 +146,7 @@ export interface FileItem {
     is_directory?: boolean;
     is_file?: boolean;
     is_empty_dir?: boolean;
+    available_workflows?: AvailableWorkflows;
 }
 
 export interface FileExplorerProps {
@@ -137,7 +170,17 @@ export interface Storage {
 
 export interface FilePreviewDialogTriggerProps {
     item: FileItem;
-    triggerLabel: string; // The text for the button/link that opens the dialog
+    triggerLabel?: string; // The text for the button/link that opens the dialog. Omit to render a controlled, trigger-less dialog.
+    open?: boolean; // Controls the dialog externally (e.g. from a Select-driven actions menu)
+    onOpenChange?: (open: boolean) => void;
+}
+
+export interface WorkflowDialogTriggerProps {
+    item: FileItem;
+    workflow: Workflow;
+    triggerLabel?: string; // The text for the button/link that opens the dialog. Omit to render a controlled, trigger-less dialog.
+    open?: boolean; // Controls the dialog externally (e.g. from a Select-driven actions menu)
+    onOpenChange?: (open: boolean) => void;
 }
 
 export interface FilePreviewerProps {

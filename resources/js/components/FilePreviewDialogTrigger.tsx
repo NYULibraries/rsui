@@ -8,8 +8,18 @@ import FilePreviewer from '@/components/FilePreviewer';
 
 import type { FilePreviewDialogTriggerProps } from '@/types';
 
-const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ item, triggerLabel }) => {
-    const [open, setOpen] = useState(false);
+const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ item, triggerLabel, open: openProp, onOpenChange }) => {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+    const isControlled = openProp !== undefined;
+    const open = isControlled ? openProp : uncontrolledOpen;
+    const setOpen = (next: boolean) => {
+        if (onOpenChange) {
+            onOpenChange(next);
+        }
+        if (!isControlled) {
+            setUncontrolledOpen(next);
+        }
+    };
 
     const isDownloadable = (item: FileItem) => item.object_type === 'file' && item.size !== undefined && item.size < 2 * 1024 * 1024 * 1024; // Less than 2GB
 
@@ -18,21 +28,25 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ ite
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button asChild variant="link" className="h-auto cursor-pointer p-0 hover:underline">
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                            if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                                e.preventDefault();
-                                setOpen(true);
-                            }
-                        }}
-                    >
-                        {triggerLabel}
-                    </a>
-                </Button>
+                {triggerLabel ? (
+                    <Button asChild variant="link" className="h-auto cursor-pointer p-0 hover:underline">
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => {
+                                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                                    e.preventDefault();
+                                    setOpen(true);
+                                }
+                            }}
+                        >
+                            {triggerLabel}
+                        </a>
+                    </Button>
+                ) : (
+                    <div style={{ display: 'none' }} />
+                )}
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[800px]">
                 <DialogHeader>
