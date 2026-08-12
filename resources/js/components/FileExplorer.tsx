@@ -11,7 +11,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
     const [selected, setSelected] = useState<string | null>(null);
     const [history, setHistory] = useState<FileItem[]>([]);
     const [filter, setFilter] = useState('');
-    // const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
