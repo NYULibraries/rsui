@@ -216,7 +216,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                             <tr>
                                 <th className="p-2 font-medium">Name</th>
                                 <th className="p-2 font-medium">Type</th>
-                                <th className="p-2 font-medium">Size</th>
                                 <th className="p-2 font-medium">Actions</th>
                                 <th className="p-2 font-medium">Last Modified</th>
                                 <th className="p-2 font-medium"></th>
@@ -265,7 +264,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{item.object_type}</td>
-                                            <td className="p-2">{item.display_size}</td>
                                             <td className="p-2">
                                                 <FileActionsCell
                                                     item={item}
@@ -289,7 +287,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{object_type}</td>
-                                            <td className="p-2"></td>
                                             <td className="p-2" onClick={(e) => e.stopPropagation()}>
                                                 <FileActionsCell
                                                     item={item}

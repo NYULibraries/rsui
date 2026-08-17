@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 import type { WorkflowDialogTriggerProps, WorkflowParameter, WorkflowParameterOption } from '@/types';
 
@@ -42,20 +43,57 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({ item, wor
         return typeof value === 'string' && value.trim().length > 0;
     });
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         setSubmitting(true);
 
-        // TODO: Wire this up to a backend endpoint that executes the workflow
-        // against the external RS API once the execute-workflow contract is available.
-        console.log('Submitting workflow', {
-            workflow_id: workflow.workflow_id,
-            version: workflow.version,
-            selected_path: item.path ?? item.name,
-            parameters: values,
-        });
+        try {
+            // Laravel sets an XSRF-TOKEN cookie that must be sent back as a header
+            // when making non-GET requests from JavaScript (Inertia apps don't use
+            // the csrf-token meta tag; they rely on the cookie/header pair).
+            const xsrfToken = decodeURIComponent(
+                document.cookie
+                    .split('; ')
+                    .find((row) => row.startsWith('XSRF-TOKEN='))
+                    ?.split('=')[1] ?? '',
+            );
 
-        setSubmitting(false);
-        setOpen(false);
+            const response = await fetch('/api/workflows/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': xsrfToken,
+                },
+                body: JSON.stringify({
+                    workflow_id: workflow.workflow_id,
+                    parameters: {
+                        source_path: item.url,
+                        ...Object.fromEntries(userParameters.map((param) => [param.name, values[param.name] ?? ''])),
+                    },
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error('Workflow submission failed.', {
+                    description: data?.message ?? `Server responded with status ${response.status}.`,
+                });
+            } else {
+                const jobId = data?.data?.job_id;
+                toast.success('Workflow submitted successfully.', {
+                    description: jobId
+                        ? `Workflow "${workflow.workflow_id}" has been queued as job ${jobId}.`
+                        : (data?.message ?? `Workflow "${workflow.workflow_id}" has been queued.`),
+                });
+                setOpen(false);
+            }
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            toast.error('Workflow submission failed.', { description: message });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const renderField = (parameter: WorkflowParameter) => {

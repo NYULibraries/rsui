@@ -6,18 +6,23 @@ import formatContent from '@/lib/formatContent';
 import type { FilePreviewerProps } from '@/types';
 import { Loader2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
-const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
-    const [fileContent, setFileContent] = useState<string>('');
-    const [fileType, setFileType] = useState<string>(''); // 'json', 'xml', 'text', 'audio', 'video', or empty
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+const FilePreviewer: React.FC<FilePreviewerProps> = ({ item, preloadedContent }) => {
+    const [fileContent, setFileContent] = useState<string>(preloadedContent?.content ?? '');
+    const [fileType, setFileType] = useState<string>(preloadedContent?.fileType ?? '');
+    const [isLoading, setIsLoading] = useState<boolean>(!preloadedContent);
     const [error, setError] = useState<string | null>(null);
 
     // Get the file URL, which will be the PHP stream endpoint.
     const fileUrl = useMemo(() => item?.download_url, [item]);
 
     useEffect(() => {
+        // Skip fetching entirely when the content was pre-loaded by the caller.
+        if (preloadedContent) {
+            return;
+        }
+
         const fetchFileContent = async () => {
             if (!fileUrl) {
                 setError('A download URL was not provided.');
@@ -73,14 +78,14 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
         };
 
         fetchFileContent();
-    }, [item, fileUrl, fileType]);
+    }, [item, fileUrl, fileType, preloadedContent]);
 
     return (
         <div>
             <Card className="rounded-lg shadow-lg">
                 <CardContent className="p-6">
                     {isLoading && (
-                        <div className="flex min-h-[200px] items-center justify-center text-gray-500">
+                        <div className="flex min-h-50 items-center justify-center text-gray-500">
                             <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                             Loading file content...
                         </div>
@@ -97,7 +102,7 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
                                     <Textarea
                                         value={formatContent(fileContent, fileType)}
                                         readOnly
-                                        className="min-h-[400px] w-full resize-none border-none bg-gray-50 p-4 font-mono text-sm text-gray-900 focus-visible:ring-0"
+                                        className="min-h-100 w-full resize-none border-none bg-gray-50 p-4 font-mono text-sm text-gray-900 focus-visible:ring-0"
                                         aria-label="File content preview"
                                         spellCheck="false"
                                     />
@@ -114,7 +119,6 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item }) => {
                     )}
                 </CardContent>
             </Card>
-            <Toaster />
         </div>
     );
 };

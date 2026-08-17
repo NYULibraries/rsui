@@ -173,6 +173,7 @@ export interface FilePreviewDialogTriggerProps {
     triggerLabel?: string; // The text for the button/link that opens the dialog. Omit to render a controlled, trigger-less dialog.
     open?: boolean; // Controls the dialog externally (e.g. from a Select-driven actions menu)
     onOpenChange?: (open: boolean) => void;
+    preloadedContent?: { content: string; fileType: string } | null;
 }
 
 export interface WorkflowDialogTriggerProps {
@@ -185,6 +186,7 @@ export interface WorkflowDialogTriggerProps {
 
 export interface FilePreviewerProps {
     item?: FileItem;
+    preloadedContent?: { content: string; fileType: string } | null;
 }
 
 interface SearchResult {

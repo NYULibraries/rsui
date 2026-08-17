@@ -8,7 +8,7 @@ import FilePreviewer from '@/components/FilePreviewer';
 
 import type { FilePreviewDialogTriggerProps } from '@/types';
 
-const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ item, triggerLabel, open: openProp, onOpenChange }) => {
+const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ item, triggerLabel, open: openProp, onOpenChange, preloadedContent }) => {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const isControlled = openProp !== undefined;
     const open = isControlled ? openProp : uncontrolledOpen;
@@ -48,7 +48,7 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ ite
                     <div style={{ display: 'none' }} />
                 )}
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[800px]">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-200">
                 <DialogHeader>
                     <DialogTitle>File Previewer</DialogTitle>
                     <DialogDescription>
@@ -69,7 +69,7 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ ite
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                    <FilePreviewer item={item} />
+                    <FilePreviewer item={item} preloadedContent={preloadedContent} />
                 </div>
             </DialogContent>
         </Dialog>

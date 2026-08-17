@@ -194,7 +194,6 @@ class ExternalApiService
     /**
      * Ping service.
      *
-     * @param  string  $endpoint  The API endpoint (e.g., 'products', 'users')
      * @return array|null The API response data, or null on failure.
      */
     public function ping(): ?array
@@ -202,6 +201,47 @@ class ExternalApiService
         $response = $this->makeRequest('GET', 'ping');
 
         return $response?->json();
+    }
+
+    /**
+     * Submit a workflow job to the external RS API.
+     *
+     * @param  string  $workflowId  The workflow identifier (e.g. "push_rw_flow").
+     * @param  array<string, string>  $parameters  User-supplied and context-resolved parameters.
+     * @return array{job_id?: string, status?: string, message?: string}|null The API response, or null on failure.
+     */
+    public function submitWorkflow(string $workflowId, array $parameters): ?array
+    {
+        try {
+
+            $response = $this->makeRequest('POST', 'jobs', [
+                'json' => [
+                    'workflow_id' => $workflowId,
+                    'parameters' => $parameters,
+                ],
+            ]);
+
+            if (! $response || $response->failed()) {
+                Log::error("submitWorkflow: request failed for workflow [{$workflowId}]", [
+                    'status' => $response?->status(),
+                    'body' => $response?->body(),
+                    'parameters' => $parameters,
+                ]);
+
+                return null;
+            }
+
+            return $response->json();
+
+        } catch (Exception $e) {
+            Log::error('submitWorkflow error: '.$e->getMessage(), [
+                'workflow_id' => $workflowId,
+                'parameters' => $parameters,
+                'exception' => $e,
+            ]);
+
+            return null;
+        }
     }
 
     /**
