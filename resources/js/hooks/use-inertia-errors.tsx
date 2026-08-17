@@ -1,6 +1,10 @@
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
 
+/**
+ * Registers global Inertia navigation error handlers so transport/runtime
+ * errors are visible during development and debugging.
+ */
 export function useInertiaErrorHandling() {
     useEffect(() => {
         const handleError = (errors: any) => {

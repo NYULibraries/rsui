@@ -1,17 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CollectionController;
-use App\Services\ExternalApiService;
-use App\Http\Controllers\WelcomeController;
-use App\Http\Controllers\PartnersController;
-use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ExternalAuthController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\FilePreviewController;
+use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\SearchController;
-
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\WorkflowController;
+use App\Services\ExternalApiService;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'check.external.expiration'])->group(function () {
@@ -66,6 +66,9 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
 
     Route::get('ping', [ExternalApiService::class, 'ping'])->name('ping');
 
+    // Workflow routes
+    Route::post('api/workflows/submit', [WorkflowController::class, 'submit'])->name('workflows.submit');
+
     // Search routes
     Route::get('search', [SearchController::class, 'index'])->name('search');
 
@@ -78,14 +81,12 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
 Route::middleware('guest')->group(function () {
 
     Route::get('/', [WelcomeController::class, 'index'])
-	  ->name('home');
+        ->name('home');
 
-     Route::get('login', [ExternalAuthController::class, 'create'])
+    Route::get('login', [ExternalAuthController::class, 'create'])
         ->name('login');
 
     Route::post('login', [ExternalAuthController::class, 'login'])
         ->name('login.post');
 
 });
-
-

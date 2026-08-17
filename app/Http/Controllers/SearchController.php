@@ -19,6 +19,9 @@ class SearchController extends Controller
         $this->externalApiService = $externalApiService;
     }
 
+    /**
+     * Render the search page with paginated external API results.
+     */
     public function index(Request $request): Response
     {
         $term = trim((string) $request->get('term', ''));
@@ -64,7 +67,7 @@ class SearchController extends Controller
                 }
 
             } catch (\Throwable $e) {
-                $error = 'Search error: ' . $e->getMessage();
+                $error = 'Search error: '.$e->getMessage();
                 Log::error($error);
             }
         }
@@ -80,6 +83,9 @@ class SearchController extends Controller
         ]);
     }
 
+    /**
+     * Return search results as JSON for API consumers.
+     */
     public function apisearch(Request $request): JsonResponse
     {
 
@@ -96,15 +102,19 @@ class SearchController extends Controller
         try {
 
             return response()->json(
-                $this->externalApiService->search($term, [ 'rows' => $rows, 'start' => $start, ]) ?? []
+                $this->externalApiService->search($term, ['rows' => $rows, 'start' => $start]) ?? []
             );
 
         } catch (Exception $e) {
-            Log::error("Autocomplete error: " . $e->getMessage());
+            Log::error('Autocomplete error: '.$e->getMessage());
+
             return response()->json([]);
         }
     }
 
+    /**
+     * Return lightweight search suggestions for autocomplete.
+     */
     public function autocomplete(Request $request): JsonResponse
     {
 
@@ -116,7 +126,6 @@ class SearchController extends Controller
 
         $start = 0;
 
-
         if (empty($term) || strlen($term) < 2) {
             return response()->json([]);
         }
@@ -124,11 +133,11 @@ class SearchController extends Controller
         try {
             $results = $this->externalApiService->search($term) ?? [];
 
-            if (!empty($results)) {
+            if (! empty($results)) {
                 $numFound = $results['response']['numFound'];
                 $start = $results['response']['start'];
                 foreach ($results['response']['docs'] as $document) {
-                  $documents[] = $document['package_search_response'];
+                    $documents[] = $document['package_search_response'];
                 }
             }
 
@@ -141,7 +150,8 @@ class SearchController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error("Autocomplete error: " . $e->getMessage());
+            Log::error('Autocomplete error: '.$e->getMessage());
+
             return response()->json([]);
         }
 

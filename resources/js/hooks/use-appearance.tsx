@@ -7,6 +7,9 @@ export interface AppearanceSettings {
     collectionDetailsCollapsed: boolean;
 }
 
+/**
+ * Returns true when the browser indicates a dark system preference.
+ */
 const prefersDark = () => {
     if (typeof window === 'undefined') {
         return false;
@@ -15,6 +18,10 @@ const prefersDark = () => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
+/**
+ * Persists a cookie used by server-rendered responses to stay in sync with
+ * client-side appearance selections.
+ */
 const setCookie = (name: string, value: string, days = 365) => {
     if (typeof document === 'undefined') {
         return;
@@ -24,12 +31,18 @@ const setCookie = (name: string, value: string, days = 365) => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
+/**
+ * Applies the current appearance mode to the root document class list.
+ */
 const applyTheme = (appearance: Appearance) => {
     const isDark = appearance === 'dark' || (appearance === 'system' && prefersDark());
 
     document.documentElement.classList.toggle('dark', isDark);
 };
 
+/**
+ * Returns the system dark-mode media query object when available.
+ */
 const mediaQuery = () => {
     if (typeof window === 'undefined') {
         return null;
@@ -38,6 +51,9 @@ const mediaQuery = () => {
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
 
+/**
+ * Reads persisted appearance settings, with safe defaults and parse fallback.
+ */
 const getAppearanceSettings = (): AppearanceSettings => {
     if (typeof window === 'undefined') {
         return { theme: 'system', collectionDetailsCollapsed: true };
@@ -63,12 +79,19 @@ const handleSystemThemeChange = () => {
     applyTheme(settings.theme || 'system');
 };
 
+/**
+ * Bootstraps appearance state before React mounts so the initial paint matches
+ * persisted or system preference.
+ */
 export function initializeTheme() {
     const settings = getAppearanceSettings();
     applyTheme(settings.theme);
     mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 
+/**
+ * Shared appearance hook for theme state and collection panel display state.
+ */
 export function useAppearance() {
     const [settings, setSettings] = useState<AppearanceSettings>({ theme: 'system', collectionDetailsCollapsed: true });
 

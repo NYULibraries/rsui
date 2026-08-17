@@ -34,3 +34,4 @@ frankenphp-worker.php
 public/build
 *.backup
 *.bak*
+credentials.txt

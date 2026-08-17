@@ -6,7 +6,7 @@ use App\Exceptions\ExternalAuthSessionExpiredException;
 use App\Http\Resources\ExternalSearchCollection;
 use Exception;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -31,12 +31,12 @@ class ExternalApiService
      *
      * @param  string  $path  The relative or absolute path to the file on the external service.
      *                        If relative, it will be prefixed with the controller's endpoint.
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse A streamed response that
-     *                                                            sends the file content to the client.
+     * @return StreamedResponse A streamed response that
+     *                          sends the file content to the client.
      *
-     * @throws \Exception If the external authentication cookie is not found,
-     *                    if the URL is invalid, or if the file download from the
-     *                    external service fails.
+     * @throws Exception If the external authentication cookie is not found,
+     *                   if the URL is invalid, or if the file download from the
+     *                   external service fails.
      */
     public function downloadFile(string $path): StreamedResponse
     {
@@ -48,7 +48,7 @@ class ExternalApiService
             $cookie = session('external_auth_cookie');
 
             if (! $cookie) {
-                throw new \Exception('External authentication cookie not found in session.');
+                throw new Exception('External authentication cookie not found in session.');
             }
 
             if (! str_starts_with($path, 'http://') && ! str_starts_with($path, 'https://')) {
@@ -56,15 +56,19 @@ class ExternalApiService
             }
 
             $domain = parse_url($path, PHP_URL_HOST);
+
             if (! $domain) {
-                throw new \Exception('Invalid URL: no host detected.');
+                throw new Exception('Invalid URL: no host detected.');
             }
 
             $externalRequestUrl = "{$path}?download=true";
 
-            Log::info("External request Url: $externalRequestUrl}");
+            if (App::isLocal()) {
+                Log::info("External request Url: $externalRequestUrl}");
+            }
 
             $filename = basename(parse_url($path, PHP_URL_PATH));
+
             if (empty($filename) || $filename === '/') {
                 $filename = 'downloaded_file'; // Fallback if no filename can be extracted
             }
@@ -82,22 +86,32 @@ class ExternalApiService
             $requestHeaders = [
                 'Accept-Encoding: gzip, deflate, br',
                 'Connection: keep-alive',
-                'User-Agent: RSUI/' . config('app.version') . ' (dlts@nyu.edu)',
+                'User-Agent: RSUI/'.config('app.version').' (dlts@nyu.edu)',
                 'Accept: */*',
                 "Cookie: Authorization={$cookie}",
             ];
 
             curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
 
-            $responseHeaders = [];
-
-            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) use (&$responseHeaders) {
+            // Headers are only known once cURL actually receives the upstream
+            // response, which happens inside the StreamedResponse callback below.
+            // Emit Content-Type/Content-Length dynamically via header() as soon
+            // as they're parsed, instead of pre-populating the response headers
+            // (which would always be empty and could send an invalid, empty
+            // Content-Length header, causing nginx to reject the response with
+            // a 502 Bad Gateway).
+            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) {
                 $len = strlen($header);
                 $parts = explode(':', $header, 2);
                 if (count($parts) < 2) {
                     return $len;
                 }
-                $responseHeaders[strtolower(trim($parts[0]))][] = trim($parts[1]);
+                $name = strtolower(trim($parts[0]));
+                $value = trim($parts[1]);
+
+                if (! headers_sent() && $value !== '' && in_array($name, ['content-type', 'content-length'], true)) {
+                    header("{$name}: {$value}");
+                }
 
                 return $len;
             });
@@ -110,15 +124,14 @@ class ExternalApiService
                 }
                 curl_close($ch);
             }, 200, [
-                'Content-Type' => $responseHeaders['content-type'][0] ?? 'application/octet-stream',
+                'Content-Type' => 'application/octet-stream',
                 'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-                'Content-Length' => $responseHeaders['content-length'][0] ?? null,
                 'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
                 'Expires' => '0',
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('File download error: '.$e->getMessage(), ['exception' => $e]);
 
             return new StreamedResponse(function () use ($e) {
@@ -143,15 +156,17 @@ class ExternalApiService
             abort(404, 'Invalid file path.');
         }
 
-        $response = $this->makeRequest('GET', $sanitizedPath);
+        $requestPath = "{$sanitizedPath}?include=workflows";
 
-        if (!$response || $response->failed()) {
+        $response = $this->makeRequest('GET', $requestPath);
+
+        if (! $response || $response->failed()) {
             return null;
         }
 
         $data = $response->json();
 
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return null;
         }
 
@@ -165,8 +180,8 @@ class ExternalApiService
 
                 if (isset($child['download_url'])) {
                     $downloadUrl = $child['download_url'];
-                    $child['download_url'] = str_replace($this->endpoint, '/download/', $downloadUrl);
-                    $child['preview_url'] = str_replace($this->endpoint, '/preview/', $downloadUrl);
+                    $child['download_url'] = str_replace($this->endpoint, '/download', $downloadUrl);
+                    $child['preview_url'] = str_replace($this->endpoint, '/preview', $downloadUrl);
                 }
 
                 return $child;
@@ -179,7 +194,6 @@ class ExternalApiService
     /**
      * Ping service.
      *
-     * @param  string  $endpoint  The API endpoint (e.g., 'products', 'users')
      * @return array|null The API response data, or null on failure.
      */
     public function ping(): ?array
@@ -187,6 +201,47 @@ class ExternalApiService
         $response = $this->makeRequest('GET', 'ping');
 
         return $response?->json();
+    }
+
+    /**
+     * Submit a workflow job to the external RS API.
+     *
+     * @param  string  $workflowId  The workflow identifier (e.g. "push_rw_flow").
+     * @param  array<string, string>  $parameters  User-supplied and context-resolved parameters.
+     * @return array{job_id?: string, status?: string, message?: string}|null The API response, or null on failure.
+     */
+    public function submitWorkflow(string $workflowId, array $parameters): ?array
+    {
+        try {
+
+            $response = $this->makeRequest('POST', 'jobs', [
+                'json' => [
+                    'workflow_id' => $workflowId,
+                    'parameters' => $parameters,
+                ],
+            ]);
+
+            if (! $response || $response->failed()) {
+                Log::error("submitWorkflow: request failed for workflow [{$workflowId}]", [
+                    'status' => $response?->status(),
+                    'body' => $response?->body(),
+                    'parameters' => $parameters,
+                ]);
+
+                return null;
+            }
+
+            return $response->json();
+
+        } catch (Exception $e) {
+            Log::error('submitWorkflow error: '.$e->getMessage(), [
+                'workflow_id' => $workflowId,
+                'parameters' => $parameters,
+                'exception' => $e,
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -296,56 +351,45 @@ class ExternalApiService
      * @param  string  $method  The HTTP method (GET, POST, PUT, DELETE).
      * @param  string  $path  The API path relative to the base URL.
      * @param  array  $options  Additional Guzzle request options.
-     * @return \Illuminate\Http\Client\Response|null The Laravel HTTP client response, or null on error.
+     * @return Response|null The Laravel HTTP client response, or null on error.
      */
-protected function makeRequest(string $method, string $path, array $options = [], bool $useCache = true, int $cacheMinutes = 10): ?Response
-{
-    try {
-        $this->validateSession();
+    protected function makeRequest(string $method, string $path, array $options = [], bool $useCache = true, int $cacheMinutes = 10): ?Response
+    {
+        try {
+            $this->validateSession();
 
-        // $sessionId = session()->getId();
+            $cookie = session('external_auth_cookie');
 
-        // $cacheKey = "api_cache:" . sha1($sessionId . $method . $path . serialize($options));
+            if (! $cookie) {
+                throw new Exception('External authentication cookie missing.');
+            }
 
-        // if ($useCache && $cached = Cache::get($cacheKey)) {
-        //     return $cached;
-        // }
+            $domain = parse_url($this->endpoint, PHP_URL_HOST);
 
-        $cookie = session('external_auth_cookie');
+            // 3. Make the Request
+            $response = Http::baseUrl($this->endpoint)
+                ->withCookies(['Authorization' => $cookie], $domain)
+                ->withHeaders([
+                    'User-Agent' => 'RSUI/'.config('app.version').' (dlts@nyu.edu)',
+                    'Accept' => 'application/json',
+                ])
+                ->timeout(10)
+                ->send($method, $path, $options);
 
-        if (!$cookie) {
-            throw new Exception('External authentication cookie missing.');
+            // Log::info($response);
+
+            $response->throw();
+
+            $this->updateAuthCookieFromResponse($response);
+
+            return $response;
+
+        } catch (Exception $e) {
+            Log::error("API Error [{$method} {$path}]: ".$e->getMessage());
+
+            return null;
         }
-
-        $domain = parse_url($this->endpoint, PHP_URL_HOST);
-
-        // 3. Make the Request
-        $response = Http::baseUrl($this->endpoint)
-            ->withCookies(['Authorization' => $cookie], $domain)
-            ->withHeaders([
-                'User-Agent' => 'RSUI/' . config('app.version'). ' (dlts@nyu.edu)',
-                'Accept' => 'application/json',
-            ])
-            ->timeout(10)
-            ->send($method, $path, $options);
-
-        // Log::info($response);
-
-        $response->throw();
-
-        $this->updateAuthCookieFromResponse($response);
-
-        // if ($useCache) {
-        //     Cache::put($cacheKey, $response, now()->addMinutes($cacheMinutes));
-        // }
-
-        return $response;
-
-    } catch (Exception $e) {
-        Log::error("API Error [{$method} {$path}]: " . $e->getMessage());
-        return null;
     }
-}
 
     /**
      * Update the authentication cookie from the response.
@@ -462,7 +506,7 @@ protected function makeRequest(string $method, string $path, array $options = []
             }
 
             // 3. Execute authenticated GET request to search endpoint with all parameters
-            $response = $this->makeRequest('GET', 'search?' . http_build_query($queryParams));
+            $response = $this->makeRequest('GET', 'search?'.http_build_query($queryParams));
 
             $results = $response?->json();
 

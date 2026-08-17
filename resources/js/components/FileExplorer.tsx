@@ -1,9 +1,8 @@
-import FilePreviewDialogTrigger from '@/components/FilePreviewDialogTrigger'; // Adjust path
+import FileActionsCell from '@/components/FileActionsCell';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { FileItem, Storage } from '@/types';
+import type { FileItem, Storage, Workflow } from '@/types';
 import { ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -12,7 +11,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
     const [selected, setSelected] = useState<string | null>(null);
     const [history, setHistory] = useState<FileItem[]>([]);
     const [filter, setFilter] = useState('');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -138,6 +136,30 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
 
     const isDownloadable = (item: FileItem) => item.object_type === 'file' && item.size !== undefined && item.size < 2 * 1024 * 1024 * 1024; // Less than 2GB
 
+    // Workflows come back from the API (via `?include=workflows`), keyed by the object type they were
+    // advertised for. They may be present either on the directory being browsed (currentData) or,
+    // depending on the API response shape, directly on the child item itself. A workflow is usable
+    // for a given item when its `applies_to.object_types` includes that item's object_type. Every
+    // matching workflow is surfaced (not just a single hardcoded one), so the actions dropdown is
+    // fully dictated by what the API advertises.
+    const getApplicableWorkflows = (item: FileItem): Workflow[] => {
+        const candidates = [
+            ...(currentData?.available_workflows?.directory ?? []),
+            ...(currentData?.available_workflows?.file ?? []),
+            ...(item.available_workflows?.directory ?? []),
+            ...(item.available_workflows?.file ?? []),
+        ];
+
+        const seen = new Set<string>();
+        return candidates.filter((workflow) => {
+            if (!workflow.applies_to.object_types.includes(item.object_type) || seen.has(workflow.workflow_id)) {
+                return false;
+            }
+            seen.add(workflow.workflow_id);
+            return true;
+        });
+    };
+
     if (loading) {
         return <LoadingSkeleton />;
     }
@@ -194,9 +216,7 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                             <tr>
                                 <th className="p-2 font-medium">Name</th>
                                 <th className="p-2 font-medium">Type</th>
-                                <th className="p-2 font-medium">Size</th>
-                                <th className="p-2 font-medium">Preview</th>
-                                <th className="p-2 font-medium">Download</th>
+                                <th className="p-2 font-medium">Actions</th>
                                 <th className="p-2 font-medium">Last Modified</th>
                                 <th className="p-2 font-medium"></th>
                             </tr>
@@ -210,8 +230,6 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                     item.object_type === 'directory' && 'cursor-pointer',
                                     selected === item.name && 'ring ring-primary',
                                 );
-
-                                console.log(item);
 
                                 item.preview = false;
 
@@ -246,43 +264,13 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{item.object_type}</td>
-                                            <td className="p-2">{item.display_size}</td>
                                             <td className="p-2">
-                                                {item.preview && item.download_url ? (
-                                                    <FilePreviewDialogTrigger item={item} triggerLabel="Preview" />
-                                                ) : (
-                                                    <div>
-                                                        <HoverCard>
-                                                            <HoverCardTrigger>
-                                                                <span className="text-muted-foreground/50">Not available</span>
-                                                            </HoverCardTrigger>
-                                                            <HoverCardContent>
-                                                                <span>Unavailable at the moment — please check back soon.</span>
-                                                            </HoverCardContent>
-                                                        </HoverCard>
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="p-2">
-                                                {isDownloadable(item) && item.download_url ? (
-                                                    <a
-                                                        href={item.download_url}
-                                                        className="text-primary hover:underline"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                    >
-                                                        Download
-                                                    </a>
-                                                ) : (
-                                                    <HoverCard>
-                                                        <HoverCardTrigger>
-                                                            <span className="text-muted-foreground/50">N/A</span>
-                                                        </HoverCardTrigger>
-                                                        <HoverCardContent>
-                                                            <span>Download for files over 2GB of size is not currently supported.</span>
-                                                        </HoverCardContent>
-                                                    </HoverCard>
-                                                )}
+                                                <FileActionsCell
+                                                    item={item}
+                                                    workflows={getApplicableWorkflows(item)}
+                                                    downloadable={isDownloadable(item)}
+                                                    previewable={item.preview === true}
+                                                />
                                             </td>
                                             <td className="p-2">{formatDate(item.last_modified)}</td>
                                             <td className="p-2"></td>
@@ -299,9 +287,14 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{object_type}</td>
-                                            <td className="p-2"></td>
-                                            <td className="p-2"></td>
-                                            <td className="p-2"></td>
+                                            <td className="p-2" onClick={(e) => e.stopPropagation()}>
+                                                <FileActionsCell
+                                                    item={item}
+                                                    workflows={getApplicableWorkflows(item)}
+                                                    downloadable={false}
+                                                    previewable={false}
+                                                />
+                                            </td>
                                             <td className="p-2">{formatDate(item.last_modified)}</td>
                                             <td className="p-2">
                                                 <ChevronRight size={24} className="text-gray-400" />
