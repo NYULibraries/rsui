@@ -14,11 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. Setup PHP 8.2 and Install Dependencies
+      # 1. Setup PHP 8.4 and Install Dependencies
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.4'
           extensions: mbstring, dom, curl, libxml, zip, bcmath, gd, pdo_sqlite, xsl
           tools: composer:v2
 
