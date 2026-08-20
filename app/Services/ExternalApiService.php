@@ -161,13 +161,13 @@ class ExternalApiService
         $response = $this->makeRequest('GET', $requestPath);
 
         if (! $response || $response->failed()) {
-            return null;
+            abort(502, 'Unable to reach the resource service.');
         }
 
         $data = $response->json();
 
         if (! is_array($data)) {
-            return null;
+            abort(502, 'The resource service returned an unreadable response.');
         }
 
         $data['url'] = "/fs/{$sanitizedPath}";

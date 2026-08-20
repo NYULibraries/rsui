@@ -22,10 +22,16 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface FlashMessages {
+    success?: string | null;
+    error?: string | null;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    flash: FlashMessages;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     [key: string]: unknown;
@@ -120,6 +126,7 @@ export interface Workflow {
     description: string;
     applies_to: {
         object_types: Array<'file' | 'directory'>;
+        mime_types?: string[]; // Restricts which files a workflow accepts. Omitted/empty means unrestricted.
     };
     parameters: WorkflowParameter[];
 }
@@ -178,7 +185,11 @@ export interface FilePreviewDialogTriggerProps {
 
 export interface WorkflowDialogTriggerProps {
     item: FileItem;
-    workflow: Workflow;
+    workflow?: Workflow;
+    workflows?: Workflow[];
+    pathSegments?: string[]; // Ancestor breadcrumb names, mirroring the explorer path, used to title the dialog.
+    partnerName?: string; // Owning partner, shown above the path in the dialog title.
+    collectionName?: string; // Owning collection, shown above the path in the dialog title.
     triggerLabel?: string; // The text for the button/link that opens the dialog. Omit to render a controlled, trigger-less dialog.
     open?: boolean; // Controls the dialog externally (e.g. from a Select-driven actions menu)
     onOpenChange?: (open: boolean) => void;

@@ -108,7 +108,13 @@ export default function Partner() {
                 </div>
                 <h5 className="text-l scroll-m-20 font-semibold tracking-tight">Perspectives</h5>
                 <div className="rounded-md border">
-                    <FileExplorer storage={storage_path} partnerId={String(partner.id)} collectionId={String(collection.id)} />
+                    <FileExplorer
+                        storage={storage_path}
+                        partnerId={String(partner.id)}
+                        collectionId={String(collection.id)}
+                        partnerName={partner.name}
+                        collectionName={collection.name}
+                    />
                 </div>
             </div>
         </AppLayout>

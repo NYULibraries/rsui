@@ -29,11 +29,17 @@ const resolveFileType = (mimeType?: string): string => {
 const FileActionsCell = ({
     item,
     workflows,
+    pathSegments = [],
+    partnerName,
+    collectionName,
     downloadable,
     previewable,
 }: {
     item: FileItem;
     workflows: Workflow[];
+    pathSegments?: string[];
+    partnerName?: string;
+    collectionName?: string;
     downloadable: boolean;
     previewable: boolean;
 }) => {
@@ -137,6 +143,10 @@ const FileActionsCell = ({
                 <WorkflowDialogTrigger
                     item={item}
                     workflow={activeWorkflow}
+                    workflows={workflows}
+                    pathSegments={pathSegments}
+                    partnerName={partnerName}
+                    collectionName={collectionName}
                     open={!!activeWorkflow}
                     onOpenChange={(open) => {
                         if (!open) {

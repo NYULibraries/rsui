@@ -8,7 +8,13 @@ import FilePreviewer from '@/components/FilePreviewer';
 
 import type { FilePreviewDialogTriggerProps } from '@/types';
 
-const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ item, triggerLabel, open: openProp, onOpenChange, preloadedContent }) => {
+const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({
+    item,
+    triggerLabel,
+    open: openProp,
+    onOpenChange,
+    preloadedContent,
+}) => {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const isControlled = openProp !== undefined;
     const open = isControlled ? openProp : uncontrolledOpen;
@@ -56,7 +62,12 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({ ite
                             <span>
                                 Displaying file:{' '}
                                 <span>
-                                    <a href={item.download_url} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                                    <a
+                                        href={item.download_url}
+                                        className="rounded-sm text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
                                         {item.name}
                                     </a>
                                 </span>

@@ -2,16 +2,62 @@ import FileActionsCell from '@/components/FileActionsCell';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { getApplicableWorkflows as getWorkflowsForItem, mergeWorkflows } from '@/lib/workflows';
 import type { FileItem, Storage, Workflow } from '@/types';
 import { ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]; partnerId: string; collectionId: string }) => {
+/**
+ * Fetches a directory listing, converting empty or non-JSON responses (for example an HTML
+ * login page after the external session expires) into a readable error instead of letting
+ * `Response.json()` fail with an opaque "unexpected end of data" message.
+ */
+const fetchDirectory = async (url: string): Promise<FileItem> => {
+    const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+    });
+
+    const body = (await response.text()).trim();
+
+    if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}.`);
+    }
+
+    if (body === '') {
+        throw new Error('The server returned an empty response.');
+    }
+
+    try {
+        return JSON.parse(body) as FileItem;
+    } catch {
+        if (body.startsWith('<')) {
+            throw new Error('The server returned a page instead of data. Your session may have expired — try reloading.');
+        }
+
+        throw new Error('The server returned a response that could not be read.');
+    }
+};
+
+const FileExplorer = ({
+    storage,
+    partnerId,
+    collectionId,
+    partnerName,
+    collectionName,
+}: {
+    storage: Storage[];
+    partnerId: string;
+    collectionId: string;
+    partnerName?: string;
+    collectionName?: string;
+}) => {
     const [currentData, setCurrentData] = useState<FileItem | null>(null);
     const [selected, setSelected] = useState<string | null>(null);
     const [history, setHistory] = useState<FileItem[]>([]);
     const [filter, setFilter] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (storage && storage.length > 0) {
@@ -66,15 +112,18 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
 
     const fetchData = async (itemToFetch: { url: string }) => {
         setLoading(true);
+        setError(null);
         try {
             // Defensive check: Ensure itemToFetch.url is always a string here
             if (!itemToFetch.url) {
                 console.error('Error: Attempted to fetch data for an item with no URL:', itemToFetch);
                 return; // Prevent making a request with an undefined URL
             }
-            const res = await fetch(itemToFetch.url);
-            const data = await res.json();
+            const data = await fetchDirectory(itemToFetch.url);
             setCurrentData(data);
+        } catch (e) {
+            console.error('Error: Unable to load directory:', e);
+            setError(e instanceof Error ? e.message : 'Unable to load this directory.');
         } finally {
             setLoading(false);
         }
@@ -83,6 +132,7 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
     const handleClick = async (item: FileItem) => {
         if (item.object_type === 'directory') {
             setLoading(true);
+            setError(null);
             // Defensive check: A clicked directory MUST have a URL to navigate into it
             if (!item.url) {
                 console.error('Error: Clicked directory has no URL:', item);
@@ -90,19 +140,24 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                 return;
             }
 
-            const res = await fetch(item.url);
-            const data = await res.json();
+            try {
+                const data = await fetchDirectory(item.url);
 
-            if (currentData) {
-                if (currentData.object_type === 'directory' && !currentData.url) {
-                    console.warn('Warning: Attempting to add a directory to history without a URL:', currentData);
+                if (currentData) {
+                    if (currentData.object_type === 'directory' && !currentData.url) {
+                        console.warn('Warning: Attempting to add a directory to history without a URL:', currentData);
+                    }
+                    setHistory((prev) => [...prev, currentData]);
                 }
-                setHistory((prev) => [...prev, currentData]);
+                setCurrentData(data);
+                setFilter('');
+                setSelected(null);
+            } catch (e) {
+                console.error('Error: Unable to open directory:', e);
+                setError(e instanceof Error ? e.message : 'Unable to open this directory.');
+            } finally {
+                setLoading(false);
             }
-            setCurrentData(data);
-            setFilter('');
-            setSelected(null);
-            setLoading(false);
         } else {
             setSelected(item.name);
         }
@@ -138,30 +193,22 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
 
     // Workflows come back from the API (via `?include=workflows`), keyed by the object type they were
     // advertised for. They may be present either on the directory being browsed (currentData) or,
-    // depending on the API response shape, directly on the child item itself. A workflow is usable
-    // for a given item when its `applies_to.object_types` includes that item's object_type. Every
-    // matching workflow is surfaced (not just a single hardcoded one), so the actions dropdown is
-    // fully dictated by what the API advertises.
-    const getApplicableWorkflows = (item: FileItem): Workflow[] => {
-        const candidates = [
-            ...(currentData?.available_workflows?.directory ?? []),
-            ...(currentData?.available_workflows?.file ?? []),
-            ...(item.available_workflows?.directory ?? []),
-            ...(item.available_workflows?.file ?? []),
-        ];
-
-        const seen = new Set<string>();
-        return candidates.filter((workflow) => {
-            if (!workflow.applies_to.object_types.includes(item.object_type) || seen.has(workflow.workflow_id)) {
-                return false;
-            }
-            seen.add(workflow.workflow_id);
-            return true;
-        });
-    };
+    // depending on the API response shape, directly on the child item itself. Eligibility is decided
+    // entirely by `applies_to` (both `object_types` and, for workflows such as transcode and push,
+    // `mime_types`), so the actions dropdown is fully dictated by what the API advertises.
+    const getApplicableWorkflows = (item: FileItem): Workflow[] =>
+        mergeWorkflows(getWorkflowsForItem(currentData?.available_workflows, item), getWorkflowsForItem(item.available_workflows, item));
 
     if (loading) {
         return <LoadingSkeleton />;
+    }
+
+    if (error && !currentData) {
+        return (
+            <div className="p-4">
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+            </div>
+        );
     }
 
     if (!currentData) {
@@ -170,8 +217,12 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
 
     const filteredChildren = (currentData.children || []).filter((item: FileItem) => item.name.toLowerCase().includes(filter.toLowerCase()));
 
+    // Mirrors the breadcrumb rendered above the table so dialogs can show the same location.
+    const breadcrumbSegments = [...history.map((entry) => entry.name), currentData.name].filter(Boolean);
+
     return (
         <div className="p-4">
+            {error && <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
             <div className="mb-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
                 <span className="font-semibold">Path:</span>
                 {history.map((h, i) => (
@@ -179,7 +230,7 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                         {h.url ? (
                             <button
                                 onClick={() => goToIndex(i)}
-                                className="cursor-pointer text-primary underline hover:text-primary/80"
+                                className="cursor-pointer rounded-sm text-primary underline transition-colors hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                 title={h.name}
                             >
                                 {h.name}
@@ -261,7 +312,7 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                 if (item.object_type === 'file') {
                                     return (
                                         <tr key={item.name} className={rowClasses} tabIndex={0}>
-                                            <td className="max-w-xs p-2" title={item.name}>
+                                            <td className="max-w-xs truncate p-2" title={item.name}>
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{item.object_type}</td>
@@ -270,6 +321,9 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 <FileActionsCell
                                                     item={item}
                                                     workflows={getApplicableWorkflows(item)}
+                                                    pathSegments={breadcrumbSegments}
+                                                    partnerName={partnerName}
+                                                    collectionName={collectionName}
                                                     downloadable={isDownloadable(item)}
                                                     previewable={item.preview === true}
                                                 />
@@ -289,10 +343,14 @@ const FileExplorer = ({ storage, partnerId, collectionId }: { storage: Storage[]
                                                 {item.name}
                                             </td>
                                             <td className="p-2">{object_type}</td>
+                                            <td className="p-2">{item.display_size}</td>
                                             <td className="p-2" onClick={(e) => e.stopPropagation()}>
                                                 <FileActionsCell
                                                     item={item}
                                                     workflows={getApplicableWorkflows(item)}
+                                                    pathSegments={breadcrumbSegments}
+                                                    partnerName={partnerName}
+                                                    collectionName={collectionName}
                                                     downloadable={false}
                                                     previewable={false}
                                                 />

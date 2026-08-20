@@ -37,15 +37,15 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item, preloadedContent })
 
             try {
                 // Determine file type first based on mime_type
-                if (item.mime_type === 'application/json') {
+                if (item?.mime_type === 'application/json') {
                     setFileType('json');
-                } else if (item.mime_type === 'application/xml') {
+                } else if (item?.mime_type === 'application/xml') {
                     setFileType('xml');
-                } else if (item.mime_type?.startsWith('audio/')) {
+                } else if (item?.mime_type?.startsWith('audio/')) {
                     setFileType('audio');
                     setIsLoading(false);
                     return;
-                } else if (item.mime_type?.startsWith('video/')) {
+                } else if (item?.mime_type?.startsWith('video/')) {
                     setFileType('video');
                     setIsLoading(false);
                     return;

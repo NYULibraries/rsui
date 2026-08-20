@@ -129,7 +129,7 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground hover:bg-transparent hover:text-foreground"
                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                 >
                                     {showCurrentPassword ? 'Hide' : 'Show'}
@@ -155,7 +155,7 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground hover:bg-transparent hover:text-foreground"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? 'Hide' : 'Show'}
@@ -181,13 +181,13 @@ export default function Password() {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground hover:bg-transparent hover:text-foreground"
                                     onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
                                 >
                                     {showPasswordConfirmation ? 'Hide' : 'Show'}
                                 </Button>
                             </div>
-                            <InputError className="mt-2" message={errors.password_confirmation || passwordMismatchError} />
+                            <InputError className="mt-2" message={errors.password_confirmation || passwordMismatchError || undefined} />
                         </div>
 
                         <div className="flex items-center gap-4">

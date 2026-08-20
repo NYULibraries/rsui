@@ -62,7 +62,11 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
-                                                <Link key={item.title} href={item.href} className="flex items-center space-x-2 font-medium">
+                                                <Link
+                                                    key={item.title}
+                                                    href={item.href}
+                                                    className="flex items-center space-x-2 rounded-md px-2 py-1 font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                                                >
                                                     {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
                                                     <span>{item.title}</span>
                                                 </Link>
@@ -75,7 +79,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                                     href={item.href}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex items-center space-x-2 font-medium"
+                                                    className="flex items-center space-x-2 rounded-md px-2 py-1 font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                                                 >
                                                     {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
                                                     <span>{item.title}</span>
@@ -87,7 +91,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </SheetContent>
                         </Sheet>
                     </div>
-                    <Link href="/dashboard" prefetch className="flex items-center space-x-2">
+                    <Link href="/dashboard" prefetch className="flex items-center space-x-2 rounded-md transition-opacity hover:opacity-80">
                         <AppLogo />
                     </Link>
                     {/* Desktop Navigation */}

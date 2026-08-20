@@ -1,30 +1,38 @@
+import type { Errors, HttpExceptionResponse } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
 
 /**
  * Registers global Inertia navigation error handlers so transport/runtime
  * errors are visible during development and debugging.
+ *
+ * Inertia v2 replaced the single `exception` event with `httpException`
+ * (non-Inertia error responses) and `networkError` (transport failures).
  */
 export function useInertiaErrorHandling() {
     useEffect(() => {
-        const handleError = (errors: any) => {
+        const handleError = (errors: Errors) => {
             console.error('Inertia navigation error:', errors);
-            // You could show a toast notification or other user-friendly error handling here
         };
 
-        const handleException = (exception: any) => {
-            console.error('Inertia navigation exception:', exception);
-            // Handle unexpected errors during navigation
+        const handleHttpException = (response: HttpExceptionResponse) => {
+            console.error('Inertia navigation HTTP exception:', response);
         };
 
-        // Set up global error handlers for Inertia
-        router.on('error', handleError);
-        router.on('exception', handleException);
+        const handleNetworkError = (error: Error) => {
+            console.error('Inertia navigation network error:', error);
+        };
 
-        // Note: Router doesn't have an 'off' method in current version
-        // Cleanup will happen automatically when component unmounts
+        // `router.on` returns an unsubscribe callback, so each listener is
+        // detached when the consuming component unmounts.
+        const unsubscribers = [
+            router.on('error', (event) => handleError(event.detail.errors)),
+            router.on('httpException', (event) => handleHttpException(event.detail.response)),
+            router.on('networkError', (event) => handleNetworkError(event.detail.error)),
+        ];
+
         return () => {
-            // No explicit cleanup needed for current Inertia version
+            unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
     }, []);
 }

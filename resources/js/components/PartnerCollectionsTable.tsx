@@ -62,7 +62,10 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="max-w-xs text-left font-medium">
-                            <Link href={route('collection.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('collection.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 <span className="line-clamp-2">{row.getValue('name')}</span>
                             </Link>
                         </div>
@@ -86,7 +89,10 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="w-24 text-left font-medium">
-                            <Link href={route('collection.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('collection.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 {row.getValue('display_code')}
                             </Link>
                         </div>
@@ -105,7 +111,10 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="text-left font-medium">
-                            <Link href={route('collection.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('collection.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 <span className="line-clamp-2">{row.getValue('path')}</span>
                             </Link>
                         </div>
@@ -117,8 +126,11 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
                 header: () => <></>,
                 cell: ({ row }) => {
                     return (
-                        <Link href={route('collection.show', row.getValue('id'))} className="flex items-center px-2 focus:outline-none">
-                            <ChevronRight size={24} className="text-gray-400" />
+                        <Link
+                            href={route('collection.show', row.getValue('id'))}
+                            className="group flex items-center rounded-sm px-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                            <ChevronRight size={24} className="text-gray-400 transition-colors group-hover:text-primary" />
                         </Link>
                     );
                 },

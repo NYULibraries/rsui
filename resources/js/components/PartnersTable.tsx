@@ -62,7 +62,10 @@ export function PartnersTable({ partners }: PartnersTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="text-left font-medium">
-                            <Link href={route('partner.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('partner.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 {row.getValue('name')}
                             </Link>
                         </div>
@@ -88,7 +91,10 @@ export function PartnersTable({ partners }: PartnersTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="text-left font-medium">
-                            <Link href={route('partner.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('partner.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 {row.getValue('code')}
                             </Link>
                         </div>
@@ -105,7 +111,10 @@ export function PartnersTable({ partners }: PartnersTableProps) {
                 cell: ({ row }) => {
                     return (
                         <div className="text-left font-medium">
-                            <Link href={route('partner.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
+                            <Link
+                                href={route('partner.show', row.getValue('id'))}
+                                className="flex items-center rounded-sm px-4 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            >
                                 {row.getValue('path')}
                             </Link>
                         </div>
@@ -117,8 +126,11 @@ export function PartnersTable({ partners }: PartnersTableProps) {
                 header: () => <></>,
                 cell: ({ row }) => {
                     return (
-                        <Link href={route('partner.show', row.getValue('id'))} className="flex items-center px-4 focus:outline-none">
-                            <ChevronRight size={24} className="text-gray-400" />
+                        <Link
+                            href={route('partner.show', row.getValue('id'))}
+                            className="group flex items-center rounded-sm px-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                            <ChevronRight size={24} className="text-gray-400 transition-colors group-hover:text-primary" />
                         </Link>
                     );
                 },

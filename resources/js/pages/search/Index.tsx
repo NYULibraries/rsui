@@ -113,7 +113,7 @@ export default function SearchIndex() {
                                     <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">{timeoutError}</p>
                                     <button
                                         onClick={() => performSearch(searchTerm, page)}
-                                        className="mt-3 rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none"
+                                        className="mt-3 cursor-pointer rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none"
                                     >
                                         Try Again
                                     </button>
@@ -152,7 +152,10 @@ export default function SearchIndex() {
                                 {/* Index + title */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-muted-foreground">{start + index + 1}.</span>
-                                    <a href={`${r.match_path_url}`} className="text-xl font-medium text-primary hover:underline">
+                                    <a
+                                        href={`${r.match_path_url}`}
+                                        className="rounded-sm text-xl font-medium text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                    >
                                         {r.package_name}
                                     </a>
                                 </div>
@@ -182,7 +185,7 @@ export default function SearchIndex() {
                                 <button
                                     disabled={page <= 1}
                                     onClick={() => performSearch(searchTerm, page - 1)}
-                                    className="flex items-center gap-1 disabled:opacity-40"
+                                    className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                                 >
                                     <ChevronLeft className="h-4 w-4" />
                                     Previous
@@ -195,7 +198,7 @@ export default function SearchIndex() {
                                 <button
                                     disabled={page >= totalPages}
                                     onClick={() => performSearch(searchTerm, page + 1)}
-                                    className="flex items-center gap-1 disabled:opacity-40"
+                                    className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                                 >
                                     Next
                                     <ChevronRight className="h-4 w-4" />

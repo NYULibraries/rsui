@@ -30,11 +30,11 @@ class WorkflowController extends Controller
         $result = $this->externalApiService->submitWorkflow($workflow_id, $parameters);
 
         if ($result === null) {
-            return response()->json(['message' => 'Failed to submit workflow. Please try again.'], 502);
+            return response()->json(['message' => 'Failed to submit your action. Please try again.'], 502);
         }
 
         return response()->json([
-            'message' => 'Workflow submitted successfully.',
+            'message' => 'Thanks! When your action is complete, you will receive an email confirmation.',
             'data' => $result,
         ]);
     }
