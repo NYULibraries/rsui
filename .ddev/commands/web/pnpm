@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+#ddev-generated
+## Description: Run pnpm in the web container
+## Usage: pnpm [flags] [args]
+## Example: "ddev pnpm"
+## ExecRaw: true
+## HostWorkingDir: true
+## MutagenSync: true
+
+# If a $PNPM_DIRECTORY is set, run our PNPM commands in that directory
+if [ -n "$PNPM_DIRECTORY" ]; then
+  mkdir -p "$DDEV_APPROOT/$PNPM_DIRECTORY"
+  cd "$DDEV_APPROOT/$PNPM_DIRECTORY" || {
+    echo "Error: Failed to change directory to '$DDEV_APPROOT/$PNPM_DIRECTORY'." >&2
+    exit 1
+  }
+fi
+
+pnpm "$@"

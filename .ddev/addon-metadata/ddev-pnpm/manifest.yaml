@@ -1,0 +1,9 @@
+name: ddev-pnpm
+repository: ddev/ddev-pnpm
+version: v1.4.0
+install_date: "2026-08-20T12:42:10-04:00"
+project_files:
+    - commands/web/pnpm
+    - web-build/Dockerfile.pnpm
+global_files: []
+removal_actions: []
