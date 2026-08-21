@@ -35,14 +35,19 @@ class PasswordController extends Controller
         try {
             $response = $this->externalApiService->updateUserPassword($validatedData);
 
-            if ($response && !isset($response['error'])) {
+            if ($response && ! isset($response['error'])) {
                 return back()->with('success', 'Password updated successfully.');
             } else {
                 $errorMessage = $response['error'] ?? 'The provided password does not match your current password.';
+
                 return back()->withErrors(['current_password' => $errorMessage]);
             }
         } catch (\Exception $e) {
-            Log::error('Error updating password: ' . $e->getMessage());
+            Log::error('Password update failed.', [
+                'user_id' => auth()->id(),
+                'exception' => $e->getMessage(),
+            ]);
+
             return back()->with('error', 'An error occurred while updating your password.');
         }
     }

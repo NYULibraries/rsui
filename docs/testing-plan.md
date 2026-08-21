@@ -40,6 +40,8 @@ not planned again.
   contracts.
 - Verify cache behavior if caching is reintroduced; cache keys must include auth context.
 - Add reusable external-auth and API fixture helpers to reduce hand-written test setup.
+- Add regression coverage for `CollectionDataException` when collection payloads are
+  missing required identifiers.
 
 ### P1 — frontend unit/component tests
 

@@ -66,16 +66,11 @@ test.describe('browsing partners, collections and files', () => {
         await expect(page.getByRole('cell', { name: 'nested.txt' })).toBeVisible();
     });
 
-    test('an unknown collection does not crash the application', async ({ page }) => {
+    test('an unknown collection shows a recoverable error state', async ({ page }) => {
         const response = await page.goto('/collections/11111111-1111-4111-8111-111111111111');
 
-        // Current behaviour: the controller catches the failure and renders the page with
-        // `collection: null`, which produces an empty body rather than an error state.
-        // This asserts only that the app stays up and does not leak a stack trace; the
-        // missing empty/error state is a known UX gap (see docs/production-readiness-plan.md).
         expect(response?.status()).toBe(200);
-
-        const body = await page.locator('body').innerText();
-        expect(body).not.toMatch(/Whoops|SQLSTATE|Stack trace|Exception/i);
+        await expect(page.getByRole('heading', { name: 'Collection unavailable' })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Return to partners' })).toBeVisible();
     });
 });

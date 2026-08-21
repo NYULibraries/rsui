@@ -6,15 +6,36 @@ import { useAppearance } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import type { Collection, FileItem } from '@/types';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function Partner() {
-    const { collection, storage_path } = usePage<{
-        collection: Collection;
+    const { collection, storage_path, error } = usePage<{
+        collection: Collection | null;
         storage_path: FileItem[];
+        error?: string;
     }>().props;
+
+    if (!collection) {
+        return (
+            <AppLayout breadcrumbs={[{ title: 'Partners', href: '/dashboard' }]}>
+                <Head title="Collection unavailable" />
+                <div className="flex h-full flex-1 items-center justify-center p-6">
+                    <div className="flex max-w-lg flex-col items-center gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
+                        <AlertTriangle className="size-10 text-destructive" aria-hidden="true" />
+                        <h1 className="text-2xl font-semibold">Collection unavailable</h1>
+                        <p className="text-muted-foreground">
+                            {error ?? 'This collection could not be found or loaded. It may have been removed or is temporarily unavailable.'}
+                        </p>
+                        <Button asChild>
+                            <Link href={route('dashboard')}>Return to partners</Link>
+                        </Button>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
 
     const { partner } = collection;
 

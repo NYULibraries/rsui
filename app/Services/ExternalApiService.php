@@ -54,9 +54,9 @@ class ExternalApiService
     }
 
     /**
-     * Get all resources from the external API.
+     * Get a resource by its RSBE path from the external API.
      *
-     * @param  string  $endpoint  The API endpoint (e.g., 'products', 'users')
+     * @param  string  $path  The RSBE resource path (e.g., 'colls/1', 'partners/1').
      * @return array|null The API response data, or null on failure.
      */
     public function getPath(string $path): ?array
@@ -133,9 +133,9 @@ class ExternalApiService
             ]);
 
             if (! $response || $response->failed()) {
-                Log::error("submitWorkflow: request failed for workflow [{$workflowId}]", [
+                Log::error('Workflow submission request failed.', [
+                    'workflow_id' => $workflowId,
                     'status' => $response?->status(),
-                    'body' => $response?->body(),
                     'parameters' => $parameters,
                 ]);
 
@@ -145,10 +145,10 @@ class ExternalApiService
             return $response->json();
 
         } catch (Exception $e) {
-            Log::error('submitWorkflow error: '.$e->getMessage(), [
+            Log::error('Workflow submission failed.', [
                 'workflow_id' => $workflowId,
                 'parameters' => $parameters,
-                'exception' => $e,
+                'exception' => $e->getMessage(),
             ]);
 
             return null;
@@ -156,9 +156,8 @@ class ExternalApiService
     }
 
     /**
-     * Get all resources from the external API.
+     * Get all partners from the external API.
      *
-     * @param  string  $endpoint  The API endpoint (e.g., 'products', 'users')
      * @return array|null The API response data, or null on failure.
      */
     public function getPartners(): ?array
@@ -169,9 +168,9 @@ class ExternalApiService
     }
 
     /**
-     * Get a single resource by ID from the external API.
+     * Get a single partner by ID from the external API.
      *
-     * @param  mixed  $id  The ID of the resource.
+     * @param  string  $id  The ID of the partner.
      * @return array|null The API response data, or null on failure.
      */
     public function getPartnerById(string $id): ?array
@@ -192,16 +191,19 @@ class ExternalApiService
             return $data;
 
         } catch (Exception $e) {
-            Log::error('External API connection error: '.$e->getMessage(), ['exception' => $e]);
+            Log::error('External API connection error while loading partner.', [
+                'partner_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
 
             return null;
         }
     }
 
     /**
-     * Get a single resource by ID from the external API.
+     * Get a single collection by ID from the external API.
      *
-     * @param  mixed  $id  The ID of the resource.
+     * @param  string  $id  The ID of the collection.
      * @return array|null The API response data, or null on failure.
      */
     public function getCollectionById(string $id): ?array
@@ -234,16 +236,19 @@ class ExternalApiService
             }
 
         } catch (Exception $e) {
-            Log::error('getCollectionById error: '.$e->getMessage(), ['exception' => $e]);
+            Log::error('External API error while loading collection.', [
+                'collection_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
 
             return null;
         }
     }
 
     /**
-     * Get a single resource by ID from the external API.
+     * Get all collections belonging to a partner from the external API.
      *
-     * @param  mixed  $id  The ID of the resource.
+     * @param  string  $id  The ID of the partner.
      * @return array|null The API response data, or null on failure.
      */
     public function getCollectionsByPartnerId(string $id): ?array
@@ -272,8 +277,9 @@ class ExternalApiService
 
             return $response?->json();
         } catch (Exception $e) {
-            Log::error('Failed to update user: '.$e->getMessage(), [
-                'exception' => $e,
+            Log::error('External API error while updating user.', [
+                'user_id' => $userId,
+                'exception' => $e->getMessage(),
             ]);
 
             return null;
@@ -296,8 +302,8 @@ class ExternalApiService
 
             return $response?->json();
         } catch (Exception $e) {
-            Log::error('Failed to update user password: '.$e->getMessage(), [
-                'exception' => $e,
+            Log::error('External API error while updating user password.', [
+                'exception' => $e->getMessage(),
             ]);
 
             return null;
@@ -371,9 +377,9 @@ class ExternalApiService
 
         } catch (Exception $e) {
             // 6. Log the failure with context for debugging
-            Log::error('Search error: '.$e->getMessage(), [
+            Log::error('External API search failed.', [
                 'term' => $term,
-                'exception' => $e,
+                'exception' => $e->getMessage(),
             ]);
 
             return null;

@@ -68,7 +68,11 @@ class SearchController extends Controller
 
             } catch (\Throwable $e) {
                 $error = 'Search error: '.$e->getMessage();
-                Log::error($error);
+                Log::error('Search request failed.', [
+                    'term' => $term,
+                    'page' => $page,
+                    'exception' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -106,7 +110,10 @@ class SearchController extends Controller
             );
 
         } catch (Exception $e) {
-            Log::error('Autocomplete error: '.$e->getMessage());
+            Log::error('Search API request failed.', [
+                'term' => $term,
+                'exception' => $e->getMessage(),
+            ]);
 
             return response()->json([]);
         }
@@ -130,6 +137,8 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $documents = [];
+
         try {
             $results = $this->externalApiService->search($term) ?? [];
 
@@ -150,7 +159,10 @@ class SearchController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Autocomplete error: '.$e->getMessage());
+            Log::error('Search autocomplete request failed.', [
+                'term' => $term,
+                'exception' => $e->getMessage(),
+            ]);
 
             return response()->json([]);
         }

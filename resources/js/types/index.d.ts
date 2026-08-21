@@ -1,6 +1,10 @@
 import { LucideIcon } from 'lucide-react';
 import type { Config } from 'ziggy-js';
 
+// ---------------------------------------------------------------------------
+// App/Inertia view models — internal to RSUI, safe to change freely.
+// ---------------------------------------------------------------------------
+
 export interface Auth {
     user: User;
 }
@@ -48,6 +52,13 @@ export interface User {
     [key: string]: unknown;
 }
 
+// ---------------------------------------------------------------------------
+// External API payload models — these mirror shapes returned by the RS API
+// (via ExternalApiService/Inertia props) and are NOT freely changeable. Any
+// field renamed/removed here must match a corresponding upstream contract
+// change; see docs/api-contract.md for the source-of-truth field list.
+// ---------------------------------------------------------------------------
+
 export interface Partner {
     id: number;
     code: string;
@@ -85,6 +96,10 @@ export interface Collection {
     storage_url: string;
 }
 
+// ---------------------------------------------------------------------------
+// App/Inertia view models — internal to RSUI, safe to change freely.
+// ---------------------------------------------------------------------------
+
 export interface ViewerImage {
     alt: string;
     title: string;
@@ -102,6 +117,11 @@ export interface CollectionTableProps {
 export interface PartnersTableProps {
     partners: Partner[];
 }
+
+// ---------------------------------------------------------------------------
+// External API payload models — mirror the RS API workflow/file-item contract.
+// See docs/api-contract.md and resources/js/lib/workflows.ts for semantics.
+// ---------------------------------------------------------------------------
 
 export interface WorkflowParameterOption {
     value: string;
@@ -156,6 +176,10 @@ export interface FileItem {
     available_workflows?: AvailableWorkflows;
 }
 
+// ---------------------------------------------------------------------------
+// App/Inertia view models — internal to RSUI, safe to change freely.
+// ---------------------------------------------------------------------------
+
 export interface FileExplorerProps {
     storage: Storage;
 }
@@ -200,6 +224,10 @@ export interface FilePreviewerProps {
     preloadedContent?: { content: string; fileType: string } | null;
 }
 
+// ---------------------------------------------------------------------------
+// External API payload models — mirror the RS search response shape.
+// ---------------------------------------------------------------------------
+
 interface SearchResult {
     package_id: string;
     package_name: string;
@@ -216,6 +244,10 @@ interface SearchResult {
     match_context?: string;
     match_path_url: string;
 }
+
+// ---------------------------------------------------------------------------
+// App/Inertia view models — internal to RSUI, safe to change freely.
+// ---------------------------------------------------------------------------
 
 interface SearchPageProps {
     term: string;

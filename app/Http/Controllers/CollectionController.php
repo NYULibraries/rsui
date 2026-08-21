@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CollectionDataException;
 use App\Services\ExternalApiService;
-use Exception;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,17 +18,17 @@ class CollectionController extends Controller
             $collection = $this->externalApiService->getCollectionById($id);
 
             if (! $collection) {
-                throw new Exception('Collection not found');
+                throw new CollectionDataException('Collection not found');
             }
 
-            $partnerId = $collection['partner_id'] ?? throw new Exception('Collection missing partner_id');
-            $collectionId = $collection['id'] ?? throw new Exception('Collection missing id');
+            $partnerId = $collection['partner_id'] ?? throw new CollectionDataException('Collection missing partner_id');
+            $collectionId = $collection['id'] ?? throw new CollectionDataException('Collection missing id');
 
             return Inertia::render('collection/Index', [
                 'collection' => $collection,
                 'storage_path' => $this->buildStoragePath($collection, $partnerId, $collectionId),
             ]);
-        } catch (Exception $exception) {
+        } catch (CollectionDataException $exception) {
             return $this->renderCollectionError($exception, $id);
         }
     }
@@ -39,14 +39,14 @@ class CollectionController extends Controller
             $collection = $this->externalApiService->getCollectionById($collectionId);
 
             if (! $collection) {
-                throw new Exception('Collection not found');
+                throw new CollectionDataException('Collection not found');
             }
 
             return Inertia::render('collection/Index', [
                 'collection' => $collection,
                 'storage_path' => $this->buildStoragePath($collection, $partnerId, $collectionId, $storage_path),
             ]);
-        } catch (Exception $exception) {
+        } catch (CollectionDataException $exception) {
             return $this->renderCollectionError($exception, $collectionId);
         }
     }
@@ -57,7 +57,7 @@ class CollectionController extends Controller
      */
     private function buildStoragePath(array $collection, string $partnerId, string $collectionId, string $storagePath = ''): array
     {
-        $code = $collection['code'] ?? throw new Exception('Collection missing code');
+        $code = $collection['code'] ?? throw new CollectionDataException('Collection missing code');
         $storage = [$code];
 
         if ($storagePath !== '') {
@@ -82,7 +82,7 @@ class CollectionController extends Controller
         return $transformed;
     }
 
-    private function renderCollectionError(Exception $exception, string $collectionId): Response
+    private function renderCollectionError(CollectionDataException $exception, string $collectionId): Response
     {
         Log::error('External API error while loading collection.', [
             'collection_id' => $collectionId,

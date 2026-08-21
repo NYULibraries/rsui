@@ -16,6 +16,15 @@ test.describe('authentication', () => {
         await expect(page.getByRole('heading', { name: /log in to your account/i })).toBeVisible();
     });
 
+    test('the password visibility toggle has an accessible name', async ({ page }) => {
+        await page.goto('/login');
+
+        const toggle = page.getByRole('button', { name: 'Show password' });
+        await expect(toggle).toBeVisible();
+        await toggle.click();
+        await expect(page.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
     test('a user can log in and reach the dashboard', async ({ page }) => {
         await login(page);
 

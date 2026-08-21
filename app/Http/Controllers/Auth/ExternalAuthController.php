@@ -17,6 +17,22 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Handles the login/logout exchange with the external RSBE API.
+ *
+ * RSUI does not own credential storage: `login()` posts the submitted email/password
+ * to the RSBE `sessions` endpoint. On success, RSBE returns an `Authorization` cookie
+ * (session token) with an `Expires` attribute; this controller extracts that cookie's
+ * value and expiry and stores them in the Laravel session as `external_auth_cookie`
+ * and `external_auth_expires`. `ExternalApiClient` forwards `external_auth_cookie` as
+ * the `Authorization` header on every subsequent upstream request, and
+ * `CheckExternalAuthExpiration` uses `external_auth_expires` to log the user out once
+ * the upstream session lapses.
+ *
+ * A local `User` row is created/updated from the RSBE-provided username purely so
+ * Laravel's own `Auth` facade has something to authenticate against; RSUI has no
+ * independent registration, password reset, or credential verification of its own.
+ */
 class ExternalAuthController extends Controller
 {
     /**
@@ -42,6 +58,14 @@ class ExternalAuthController extends Controller
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
+    /**
+     * Exchange the submitted credentials for an RSBE session cookie.
+     *
+     * Posts to the RSBE `sessions` endpoint, extracts the `Authorization` cookie
+     * value/expiry from the response, stores them in the session as
+     * `external_auth_cookie`/`external_auth_expires`, and creates/updates a local
+     * `User` record so Laravel's `Auth` facade recognizes the session.
+     */
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
@@ -113,7 +137,7 @@ class ExternalAuthController extends Controller
             return back()->withErrors(['email' => 'API Connection Error. Please try again later.']);
         } catch (RequestException $e) {
             Log::error('API request error during login.', [
-                'status' => $e->response?->status(),
+                'status' => $e->response->status(),
                 'exception' => $e->getMessage(),
             ]);
 
@@ -127,6 +151,10 @@ class ExternalAuthController extends Controller
         }
     }
 
+    /**
+     * Log the user out of both the local Laravel session and the RSBE session state
+     * stored within it (`external_auth_cookie`/`external_auth_expires`).
+     */
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();

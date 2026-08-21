@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Services\ExternalApiService;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Exception;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +46,11 @@ class ProfileController extends Controller
         try {
             $this->externalApiService->updateUserName($user->id, $validatedData['name']);
         } catch (Exception $e) {
-            Log::error('Failed to update user name in external API: ' . $e->getMessage());
+            Log::error('Profile update failed.', [
+                'user_id' => auth()->id(),
+                'exception' => $e->getMessage(),
+            ]);
+
             return back()->withErrors(['name' => 'Failed to update name. Please try again.']);
         }
 

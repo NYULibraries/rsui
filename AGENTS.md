@@ -9,7 +9,7 @@ This file contains guidelines and commands for agentic coding agents working in 
 - **Styling**: Tailwind CSS v4
 - **UI Components**: Radix UI primitives
 - **State Management**: React hooks + Inertia.js
-- **Testing**: Pest (PHP) + React Testing Library (JavaScript)
+- **Testing**: Pest (PHP) + Playwright (end-to-end)
 - **Build Tool**: Vite with Laravel plugin
 
 ## Development Commands
@@ -53,31 +53,28 @@ npm run format:check
 ./vendor/bin/pest --verbose
 ```
 
-#### JavaScript Tests (React Testing Library)
+#### End-to-End Tests (Playwright)
+
+There is currently no JavaScript unit/component test runner installed (no Jest/React
+Testing Library) — do not assume `npm test` exists. User-facing flows are instead
+covered by Playwright E2E tests against a hermetic mock RS API. See
+`tests/e2e/README.md` for full details.
 
 ```bash
-# Install testing dependencies (if not already installed)
-npm install --save-dev @testing-library/react @testing-library/jest-dom jest
-
-# Run JavaScript tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
+# Run the full E2E suite (builds, starts a mock API + Laravel, runs Playwright, tears down)
+ddev npm run test:e2e
 ```
 
 #### Testing Guidelines
 
 - Use Pest for PHP backend tests (unit, feature, integration)
-- Use React Testing Library for frontend component tests
+- Use Playwright for end-to-end coverage of user-facing flows (see `tests/e2e/specs/`)
 - Write tests for critical business logic and user interactions
 - Follow AAA pattern: Arrange, Act, Assert
 - Use descriptive test names that explain the behavior
 - Mock external dependencies and API calls
 - Test error states and edge cases, not just happy paths
+- See `docs/testing-plan.md` for current coverage and known gaps
 
 ## Code Style Guidelines
 
