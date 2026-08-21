@@ -393,20 +393,31 @@ class ExternalApiService
 
     /**
      * Update the authentication cookie from the response.
+     *
+     * The response cookie jar is seeded with the cookie that was SENT with the request
+     * (via `withCookies()`), and the upstream `Set-Cookie` is appended to it rather than
+     * replacing that entry. Selecting the first match therefore returns the outgoing
+     * cookie, which carries no expiry, and would overwrite `external_auth_expires` with
+     * null — logging the user out on their next request. Always prefer the last matching
+     * cookie, and never clear a known expiry with a null value.
      */
     private function updateAuthCookieFromResponse(Response $response): void
     {
-        $authCookie = optional(
-            collect($response->cookies()->toArray())->firstWhere('Name', 'Authorization')
-        )['Value'] ?? null;
+        $cookie = collect($response->cookies()->toArray())
+            ->where('Name', 'Authorization')
+            ->last();
 
-        if ($authCookie) {
-            session(['external_auth_cookie' => $authCookie]);
+        $authCookie = $cookie['Value'] ?? null;
 
-            $expiresCookie = optional(
-                collect($response->cookies()->toArray())->firstWhere('Name', 'Authorization')
-            )['Expires'] ?? null;
+        if (! $authCookie) {
+            return;
+        }
 
+        session(['external_auth_cookie' => $authCookie]);
+
+        $expiresCookie = $cookie['Expires'] ?? null;
+
+        if ($expiresCookie) {
             session(['external_auth_expires' => $expiresCookie]);
         }
     }

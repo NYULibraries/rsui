@@ -35,3 +35,11 @@ public/build
 *.backup
 *.bak*
 credentials.txt
+
+# End-to-end tests
+.env.e2e
+/tests/e2e/.artifacts
+/playwright-report
+/public/hot.e2e-bak
+
+docs/production-readiness-plan.md

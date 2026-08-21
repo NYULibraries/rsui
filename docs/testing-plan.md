@@ -42,15 +42,31 @@ No tests in this file are implemented yet.
 
 ## Priority 3: Frontend integration behavior
 
-1. `useAppearance` hook
+1. `workflowAppliesToItem` (`resources/js/lib/workflows.ts`)
+   - Rejects a workflow when `applies_to.object_types` excludes the item's `object_type`.
+   - Treats a missing/empty `applies_to.mime_types` as unrestricted.
+   - Restricts files to the advertised `mime_types` (e.g. transcode/push only accepting media types).
+   - Matches exact patterns (`video/mp4`), subtype wildcards (`video/*`), and `*`.
+   - Normalizes mime parameters and casing (`Text/Plain; charset=utf-8` matches `text/plain`).
+   - Rejects a mime-restricted workflow when the file has no `mime_type`.
+   - Ignores `mime_types` for directories, which carry no mime type.
+2. `getApplicableWorkflows` / `mergeWorkflows`
+   - De-duplicates workflows advertised on both the parent directory and the child item.
+   - Preserves ordering of the first occurrence.
+3. `WorkflowDialogTrigger`
+   - Preselects the action chosen from the table and still allows switching actions.
+   - Re-validates prop-supplied workflows so an ineligible action is never preselected or listed.
+   - Rebuilds the parameter form when the selected action changes.
+   - Submits `workflow_id` plus context and user parameters for the selected action.
+4. `useAppearance` hook
    - Initializes from `localStorage` with defaults on missing/invalid state.
    - Applies dark class correctly for `light|dark|system`.
    - Persists updates to `localStorage` and updates appearance cookie.
-2. File explorer navigation component
+5. File explorer navigation component
    - Initializes history/current directory from server-provided storage array.
    - Navigates directories and updates browser history path.
    - Handles missing item URLs defensively without hard crash.
-3. Search page pagination UI
+6. Search page pagination UI
    - Uses backend-provided `page`, `totalPages`, and `numFound` consistently.
    - Preserves term while navigating between pages.
 

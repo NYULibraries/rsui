@@ -10,6 +10,15 @@ export default [
     js.configs.recommended,
     ...typescript.configs.recommended,
     {
+        // The mock RS API used by the e2e suite runs in Node, not the browser.
+        files: ['tests/e2e/mock-api/**/*.mjs'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
         ...react.configs.flat.recommended,
         ...react.configs.flat['jsx-runtime'], // Required for React 17+
         languageOptions: {
