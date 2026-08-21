@@ -14,11 +14,12 @@ return [
     |
     */
     'rs' => [
-        'v0' => [
-            'endpoint' => env('RS_V0_ENDPOINT'),
-            'username' => env('RS_V0_USERNAME'),
-            'password' => env('RS_V0_PASSWORD'),
-        ],
+        // deprecated v0 API credentials
+        // 'v0' => [
+        //     'endpoint' => env('RS_V0_ENDPOINT'),
+        //     'username' => env('RS_V0_USERNAME'),
+        //     'password' => env('RS_V0_PASSWORD'),
+        // ],
         'v1' => [
             'endpoint' => env('RS_V1_ENDPOINT'),
         ]

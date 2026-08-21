@@ -1,83 +1,84 @@
-# RS UI Test Plan (Documentation Only)
+# RS UI Testing Plan
 
-This plan documents tests that should be added to improve confidence in high-risk behavior.  
-No tests in this file are implemented yet.
+This document lists the remaining test work. Completed coverage is recorded so it is
+not planned again.
 
-## Goals
+## Current coverage
 
-- Protect critical partner/collection/file navigation behavior.
-- Verify external API integration contracts and failure handling.
-- Ensure search pagination and response shaping remain stable.
-- Confirm UI state persistence (theme + navigation state) behaves as expected.
+- **PHP:** 38 feature tests pass through `ddev php artisan test`.
+- **E2E:** 17 Playwright tests pass through `ddev exec npm run test:e2e`.
+- **E2E infrastructure:** the suite uses a hermetic mock RS API and an isolated
+  `.env.e2e`; the real upstream and developer `.env` are not used.
+- **Covered journeys:** authentication, session persistence, dashboard browsing,
+  collection and directory navigation, keyboard directory navigation, workflow
+  filtering/submission, custom 404/502 pages, and the file-table column regression.
+- **Covered PHP contracts:** external path shaping and failure responses, rotated auth
+  cookies, error-page status mapping, JSON error preservation, search pagination, and
+  settings behavior.
 
-## Priority 1: External API service contracts
+## Remaining priorities
 
-1. `ExternalApiService::getPath`
-   - Maps child `url` values from external endpoint to `/fs/...`.
-   - Maps `download_url` to `/download/...` and derives `preview_url` to `/preview/...`.
-   - Returns `null` when upstream response fails or response JSON is not an array.
-2. `ExternalApiService::makeRequest`
-   - Throws/returns null behavior when auth cookie is missing or session is expired.
-   - Sends expected request headers and Authorization cookie.
-3. `ExternalApiService::search`
-   - Includes `scope=packages`, `term`, `rows`, and `start` query parameters.
-   - Produces collection metadata (`qTime`, `numFound`, `start`, `rows`) with sane defaults.
-4. `ExternalApiService::downloadFile`
-   - Returns streamed response with attachment disposition.
-   - Handles invalid URL and missing auth cookie error paths with 500 stream output.
+### P0 — route protection and request validation
 
-## Priority 2: Controller response behavior
+- Table-drive every authenticated route and verify guest redirects.
+- Add expired external-session coverage for every protected entry point.
+- Authorization and role/privilege checks are enforced by the external RS API and are
+  intentionally not duplicated in RSUI. Preserve this boundary in integration tests and
+  documentation rather than adding local policies.
+- Test workflow submission validation and the RSUI-owned `/fs` prefix transformation.
+- Add login rate-limit coverage after the intended threshold.
 
-1. `SearchController::index`
-   - Defaults to page 1 and computes `start` offset as `(page - 1) * rows`.
-   - Returns expected Inertia props (`term`, `results`, `numFound`, `start`, `page`, `totalPages`, `error`).
-   - Handles empty term without external API call.
-2. `SearchController::apisearch`
-   - Returns empty array for blank term.
-   - Returns search payload for valid term and pagination inputs.
-3. `SearchController::autocomplete`
-   - Enforces minimum term length.
-   - Returns transformed `package_search_response` values for matching docs.
-   - Handles upstream errors with safe empty JSON response.
+### P1 — focused PHP service contracts
 
-## Priority 3: Frontend integration behavior
+- Cover all remaining `ExternalApiService` facade methods with realistic fixtures:
+  partners, collections, search, workflows, profile/password updates, and ping.
+- Cover malformed payloads, connection failures, timeout behavior, and empty successful
+  responses for the extracted `ExternalApiClient`.
+- Add focused streaming tests for `ExternalFileDownloader`, including invalid URLs and
+  upstream failures.
+- Add route-controller tests for filesystem, download, and health endpoint response
+  contracts.
+- Verify cache behavior if caching is reintroduced; cache keys must include auth context.
+- Add reusable external-auth and API fixture helpers to reduce hand-written test setup.
 
-1. `workflowAppliesToItem` (`resources/js/lib/workflows.ts`)
-   - Rejects a workflow when `applies_to.object_types` excludes the item's `object_type`.
-   - Treats a missing/empty `applies_to.mime_types` as unrestricted.
-   - Restricts files to the advertised `mime_types` (e.g. transcode/push only accepting media types).
-   - Matches exact patterns (`video/mp4`), subtype wildcards (`video/*`), and `*`.
-   - Normalizes mime parameters and casing (`Text/Plain; charset=utf-8` matches `text/plain`).
-   - Rejects a mime-restricted workflow when the file has no `mime_type`.
-   - Ignores `mime_types` for directories, which carry no mime type.
-2. `getApplicableWorkflows` / `mergeWorkflows`
-   - De-duplicates workflows advertised on both the parent directory and the child item.
-   - Preserves ordering of the first occurrence.
-3. `WorkflowDialogTrigger`
-   - Preselects the action chosen from the table and still allows switching actions.
-   - Re-validates prop-supplied workflows so an ineligible action is never preselected or listed.
-   - Rebuilds the parameter form when the selected action changes.
-   - Submits `workflow_id` plus context and user parameters for the selected action.
-4. `useAppearance` hook
-   - Initializes from `localStorage` with defaults on missing/invalid state.
-   - Applies dark class correctly for `light|dark|system`.
-   - Persists updates to `localStorage` and updates appearance cookie.
-5. File explorer navigation component
-   - Initializes history/current directory from server-provided storage array.
-   - Navigates directories and updates browser history path.
-   - Handles missing item URLs defensively without hard crash.
-6. Search page pagination UI
-   - Uses backend-provided `page`, `totalPages`, and `numFound` consistently.
-   - Preserves term while navigating between pages.
+### P1 — frontend unit/component tests
 
-## Suggested execution order
+Add a JavaScript test runner and begin with deterministic, low-cost tests:
 
-1. Add/expand feature tests for SearchController.
-2. Add focused unit/feature tests for `ExternalApiService` mapping and failure handling.
-3. Add React tests for `useAppearance` and file explorer navigation behavior.
+- `lib/workflows.ts`: object-type matching, exact and wildcard MIME matching, missing
+  MIME values, deduplication, ordering, and malformed/empty workflow data.
+- `apiFetch`/`apiFetchText`: empty bodies, non-2xx responses, HTML/session-expiry
+  responses, malformed JSON, and credentials behavior.
+- `WorkflowDialogTrigger`: parameter switching, required-field validation, context
+  parameter resolution, success/error toasts, and no request on dialog open.
+- `FileExplorer`: initialization, breadcrumb history, fetch failures, filtering, and
+  keyboard navigation.
+- `use-appearance` and `session-manager`: persistence, system theme behavior, expiry
+  warnings, and refresh behavior.
+- `FilePreviewer`, `PartnersTable`, and `PartnerCollectionsTable`: supported MIME
+  branches, unsupported content, sorting, and row navigation.
 
-## Notes
+### P1 — accessibility regression coverage
 
-- Prefer Pest feature tests for request/response behavior.
-- Use mocks for external API boundaries to keep tests deterministic.
-- Add small frontend tests first around hooks and pure state transitions, then component interaction coverage.
+- Run an automated axe scan against the login, dashboard, collection, workflow dialog,
+  preview dialog, and error page.
+- Verify dialog focus return, labels/descriptions, keyboard operation, and escape
+  behavior.
+- Keep the directory-row keyboard E2E regression in place.
+
+### P2 — operational confidence
+
+- Add coverage reporting with a baseline that can be ratcheted upward.
+- Add browser tests for profile/password updates and search pagination/open-result flows.
+- Add visual or snapshot coverage only after the component test runner is established.
+
+## Test execution
+
+```bash
+ddev php artisan test
+ddev exec npm run types
+ddev exec npm run test:e2e
+```
+
+The E2E script builds production assets, starts the mock API and isolated Laravel
+environment, runs Playwright, and cleans up its processes and temporary environment.

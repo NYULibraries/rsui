@@ -1,43 +1,12 @@
 import FileActionsCell from '@/components/FileActionsCell';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Input } from '@/components/ui/input';
+import { apiFetch } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { getApplicableWorkflows as getWorkflowsForItem, mergeWorkflows } from '@/lib/workflows';
 import type { FileItem, Storage, Workflow } from '@/types';
 import { ChevronRight, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
-/**
- * Fetches a directory listing, converting empty or non-JSON responses (for example an HTML
- * login page after the external session expires) into a readable error instead of letting
- * `Response.json()` fail with an opaque "unexpected end of data" message.
- */
-const fetchDirectory = async (url: string): Promise<FileItem> => {
-    const response = await fetch(url, {
-        headers: { Accept: 'application/json' },
-        credentials: 'same-origin',
-    });
-
-    const body = (await response.text()).trim();
-
-    if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}.`);
-    }
-
-    if (body === '') {
-        throw new Error('The server returned an empty response.');
-    }
-
-    try {
-        return JSON.parse(body) as FileItem;
-    } catch {
-        if (body.startsWith('<')) {
-            throw new Error('The server returned a page instead of data. Your session may have expired — try reloading.');
-        }
-
-        throw new Error('The server returned a response that could not be read.');
-    }
-};
 
 const FileExplorer = ({
     storage,
@@ -119,7 +88,9 @@ const FileExplorer = ({
                 console.error('Error: Attempted to fetch data for an item with no URL:', itemToFetch);
                 return; // Prevent making a request with an undefined URL
             }
-            const data = await fetchDirectory(itemToFetch.url);
+            const data = await apiFetch<FileItem>(itemToFetch.url, {
+                headers: { Accept: 'application/json' },
+            });
             setCurrentData(data);
         } catch (e) {
             console.error('Error: Unable to load directory:', e);
@@ -141,7 +112,9 @@ const FileExplorer = ({
             }
 
             try {
-                const data = await fetchDirectory(item.url);
+                const data = await apiFetch<FileItem>(item.url, {
+                    headers: { Accept: 'application/json' },
+                });
 
                 if (currentData) {
                     if (currentData.object_type === 'directory' && !currentData.url) {
@@ -338,7 +311,19 @@ const FileExplorer = ({
                                         object_type = 'empty directory';
                                     }
                                     return (
-                                        <tr key={item.name} className={rowClasses} onClick={() => handleClick(item)} tabIndex={0}>
+                                        <tr
+                                            key={item.name}
+                                            className={rowClasses}
+                                            onClick={() => handleClick(item)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    void handleClick(item);
+                                                }
+                                            }}
+                                            tabIndex={0}
+                                            aria-label={`Open directory ${item.name}`}
+                                        >
                                             <td className="max-w-xs truncate p-2" title={item.name}>
                                                 {item.name}
                                             </td>

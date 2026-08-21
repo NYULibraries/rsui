@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Services\ExternalApiService;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PartnersController extends Controller
 {
-
     protected $externalApiService;
 
     public function __construct(ExternalApiService $externalApiService)
@@ -27,13 +26,14 @@ class PartnersController extends Controller
                 throw new Exception('Failed to fetch partners from external API');
             }
 
-            return Inertia::render('partners/Index', [ 'partners' => $partners, ]);
+            return Inertia::render('partners/Index', ['partners' => $partners]);
 
         } catch (Exception $e) {
-            Log::error('Error fetching partners: ' . $e->getMessage());
+            Log::error('Error fetching partners.', ['exception' => $e->getMessage()]);
+
             return Inertia::render('partners/Index', [
                 'partners' => [],
-                'error' => 'Failed to load partners. Please try again later.'
+                'error' => 'Failed to load partners. Please try again later.',
             ]);
         }
     }
@@ -43,19 +43,22 @@ class PartnersController extends Controller
         try {
             $partner = $this->externalApiService->getPartnerById($id);
 
-            if (!$partner) {
+            if (! $partner) {
                 throw new Exception('Partner not found');
             }
 
-            return Inertia::render('partner/Index', [ 'partner' => $partner, ]);
+            return Inertia::render('partner/Index', ['partner' => $partner]);
 
         } catch (Exception $e) {
-            Log::error('Error fetching partner: ' . $e->getMessage());
+            Log::error('Error fetching partner.', [
+                'partner_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
+
             return Inertia::render('partner/Index', [
                 'partner' => null,
-                'error' => 'Failed to load partner. Please try again later.'
+                'error' => 'Failed to load partner. Please try again later.',
             ]);
         }
     }
-
 }

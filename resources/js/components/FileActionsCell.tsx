@@ -1,7 +1,8 @@
 import FilePreviewDialogTrigger from '@/components/FilePreviewDialogTrigger';
-import WorkflowDialogTrigger from '@/components/WorkflowDialogTrigger';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import WorkflowDialogTrigger from '@/components/WorkflowDialogTrigger';
+import { apiFetchText } from '@/lib/api';
 import type { FileItem, Workflow } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
@@ -73,8 +74,7 @@ const FileActionsCell = ({
                 // the dialog resizing as content loads.
                 setPreviewLoading(true);
                 try {
-                    const response = await fetch(item.download_url);
-                    const content = response.ok ? await response.text() : '';
+                    const content = await apiFetchText(item.download_url);
                     setPreloadedContent({ content, fileType });
                 } catch {
                     setPreloadedContent({ content: '', fileType });

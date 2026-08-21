@@ -3,14 +3,16 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ExternalAuthController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\FilePreviewController;
+use App\Http\Controllers\FileSystemController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PartnersController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\WorkflowController;
-use App\Services\ExternalApiService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -31,16 +33,16 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
         ->whereUuid('collection');
 
     // Show collection + files from path
-    Route::get('/paths/{partner}/{collection}', [CollectionController::class, 'path'])->name('collections.wihtoutpath');
+    Route::get('/paths/{partner}/{collection}', [CollectionController::class, 'path'])->name('collections.withoutPath');
 
     Route::get('/paths/{partner}/{collection}/{path}', [CollectionController::class, 'path'])->where('path', '.*')->name('collections.path');
 
-    Route::get('/download/{path}', [ExternalApiService::class, 'downloadFile'])->where('path', '.*');
+    Route::get('/download/{path}', DownloadController::class)->where('path', '.*');
 
     Route::get('/preview/{path}', [FilePreviewController::class, 'show'])->where('path', '.*')->name('file.preview');
 
     // List files from path
-    Route::get('/fs/{path}', [ExternalApiService::class, 'getPath'])->where('path', '.*');
+    Route::get('/fs/{path}', FileSystemController::class)->where('path', '.*');
 
     Route::redirect('settings', 'settings/profile');
 
@@ -64,7 +66,7 @@ Route::middleware(['auth', 'check.external.expiration'])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 
-    Route::get('ping', [ExternalApiService::class, 'ping'])->name('ping');
+    Route::get('ping', HealthController::class)->name('ping');
 
     // Workflow routes
     Route::post('api/workflows/submit', [WorkflowController::class, 'submit'])->name('workflows.submit');

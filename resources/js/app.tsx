@@ -1,5 +1,6 @@
 import '../css/app.css';
 
+import AppErrorBoundary from '@/components/app-error-boundary';
 import type { ResolvedComponent } from '@inertiajs/react';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -20,10 +21,10 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(
-            <>
+            <AppErrorBoundary>
                 <App {...props} />
                 <Toaster closeButton expand richColors />
-            </>,
+            </AppErrorBoundary>,
         );
     },
     progress: {

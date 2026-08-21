@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { apiFetch } from '@/lib/api';
 import { Building2, ChevronRight, File as FileIcon, Folder, Library } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -156,7 +157,7 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                     ?.split('=')[1] ?? '',
             );
 
-            const response = await fetch('/api/workflows/submit', {
+            const data = await apiFetch<{ data?: { job_id?: string }; message?: string }>('/api/workflows/submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -176,24 +177,14 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                     },
                 }),
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                toast.error('Workflow submission failed.', {
-                    ...WORKFLOW_TOAST_OPTIONS,
-                    description: data?.message ?? `Server responded with status ${response.status}.`,
-                });
-            } else {
-                const jobId = data?.data?.job_id;
-                toast.success('Action submitted successfully.', {
-                    ...WORKFLOW_TOAST_OPTIONS,
-                    description: jobId
-                        ? `Workflow "${selectedWorkflow.workflow_id}" has been queued as job ${jobId}.`
-                        : (data?.message ?? `Workflow "${selectedWorkflow.workflow_id}" has been queued.`),
-                });
-                setOpen(false);
-            }
+            const jobId = data?.data?.job_id;
+            toast.success('Action submitted successfully.', {
+                ...WORKFLOW_TOAST_OPTIONS,
+                description: jobId
+                    ? `Workflow "${selectedWorkflow.workflow_id}" has been queued as job ${jobId}.`
+                    : (data?.message ?? `Workflow "${selectedWorkflow.workflow_id}" has been queued.`),
+            });
+            setOpen(false);
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : String(e);
             toast.error('Workflow submission failed.', {

@@ -56,6 +56,16 @@ test.describe('browsing partners, collections and files', () => {
         await expect(page.getByRole('cell', { name: 'nested.txt' })).toBeVisible();
     });
 
+    test('a directory can be opened with the keyboard', async ({ page }) => {
+        await page.goto(`/paths/${PARTNER_ID}/${COLLECTION_ID}`);
+
+        const directory = page.getByRole('row').filter({ hasText: 'subdir' });
+        await directory.focus();
+        await directory.press('Enter');
+
+        await expect(page.getByRole('cell', { name: 'nested.txt' })).toBeVisible();
+    });
+
     test('an unknown collection does not crash the application', async ({ page }) => {
         const response = await page.goto('/collections/11111111-1111-4111-8111-111111111111');
 

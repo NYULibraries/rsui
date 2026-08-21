@@ -84,3 +84,5 @@ shows — for example, that a submitted job's `source_path` had its `/fs` prefix
   surfaced as `JSON.parse: unexpected end of data` to users.
 - **`mime_types` filtering** (`03`) — a video-only workflow must not be offered for a
   `text/plain` file.
+- **Custom error pages** (`04`) — missing pages show the branded 404 experience, and
+  upstream failures show the file-service-specific 502 experience.

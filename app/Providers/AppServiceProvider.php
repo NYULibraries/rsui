@@ -7,6 +7,7 @@ use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Resources\Json\JsonResource;
+use RuntimeException;
 
 /**
  * Class AppServiceProvider
@@ -35,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        // Validate critical environment configuration.
+        $this->validateEnvironmentConfig();
+
         /**
          * 1. Data Transformation Configuration
          *
@@ -79,6 +84,26 @@ class AppServiceProvider extends ServiceProvider
                     'response_body'    => $event->response->json() ?? $event->response->body(),
                 ]);
             });
+        }
+    }
+    /**
+     * Validate critical environment configuration.
+     *
+     * Throws a descriptive exception if any required environment variable is missing.
+     */
+    protected function validateEnvironmentConfig(): void
+    {
+        $requiredEnvVars = [
+            'RS_V1_ENDPOINT',
+        ];
+
+        foreach ($requiredEnvVars as $envVar) {
+            $configKey = "services." . strtolower(str_replace('_', '.', $envVar));
+            if (blank(config($configKey))) {
+                throw new \RuntimeException(
+                    "Configuration Error: Missing required environment variable '{$envVar}' (config key: '{$configKey}')."
+                );
+            }
         }
     }
 }

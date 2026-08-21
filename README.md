@@ -54,6 +54,24 @@ ddev php artisan test
 vendor/bin/pint --dirty
 ```
 
+## Authentication
+
+Core identity management workflows—including user registration, password resets, and email verification—are owned and managed externally by RSBE.
+
+These features are intentionally absent from this application. All user onboarding, account recovery, and verification processes must be handled directly through the RSBE service.
+
+## Authorization and path safety
+
+RSUI delegates authorization, roles, and privileges to the external RS API. The API
+enforces whether an authenticated user may access a partner, collection, path, or
+workflow; RSUI intentionally does not duplicate those policies locally.
+
+The `/fs`, `/preview`, and `/download` routes proxy the path formats defined by the
+external API. Path traversal and normalization protections are enforced by that API
+layer, so RSUI must preserve the upstream path contract rather than apply a separate
+normalization scheme. RSUI is still responsible for authentication/session middleware,
+request validation, and preserving its own routing-prefix transformations.
+
 ## Application flow overview
 
 1. Authenticated users enter the dashboard and navigate partners/collections.
@@ -88,4 +106,4 @@ tests/                # Pest feature/unit tests
 
 ## Documentation index
 
-- Test plan (planned tests only): `docs/testing-plan.md`
+- Testing plan and current coverage: `docs/testing-plan.md`

@@ -2,22 +2,32 @@
 
 namespace App\Services;
 
-use App\Exceptions\ExternalAuthSessionExpiredException;
 use App\Http\Resources\ExternalSearchCollection;
 use Exception;
-use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Coordinates resource-specific operations against the external RS API.
+ *
+ * HTTP transport, authentication-cookie refresh, session validation, and file
+ * streaming are delegated to focused services. This facade remains the stable
+ * application-facing API used by controllers and preserves the response-shaping
+ * behavior expected by the frontend.
+ */
 class ExternalApiService
 {
-    protected $endpoint;
+    private string $endpoint;
 
-    public function __construct()
+    private readonly ExternalApiClient $client;
+
+    private readonly ExternalFileDownloader $downloader;
+
+    public function __construct(?ExternalApiClient $client = null, ?ExternalFileDownloader $downloader = null)
     {
-        $this->endpoint = rtrim(config('services.rs.v1.endpoint'), '/');
+        $this->client = $client ?? new ExternalApiClient;
+        $this->downloader = $downloader ?? new ExternalFileDownloader($this->client);
+        $this->endpoint = $this->client->endpoint();
     }
 
     /**
@@ -40,106 +50,7 @@ class ExternalApiService
      */
     public function downloadFile(string $path): StreamedResponse
     {
-
-        try {
-
-            $this->validateSession();
-
-            $cookie = session('external_auth_cookie');
-
-            if (! $cookie) {
-                throw new Exception('External authentication cookie not found in session.');
-            }
-
-            if (! str_starts_with($path, 'http://') && ! str_starts_with($path, 'https://')) {
-                $path = rtrim($this->endpoint, '/').'/'.ltrim($path, '/');
-            }
-
-            $domain = parse_url($path, PHP_URL_HOST);
-
-            if (! $domain) {
-                throw new Exception('Invalid URL: no host detected.');
-            }
-
-            $externalRequestUrl = "{$path}?download=true";
-
-            if (App::isLocal()) {
-                Log::info("External request Url: $externalRequestUrl}");
-            }
-
-            $filename = basename(parse_url($path, PHP_URL_PATH));
-
-            if (empty($filename) || $filename === '/') {
-                $filename = 'downloaded_file'; // Fallback if no filename can be extracted
-            }
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $externalRequestUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-            curl_setopt($ch, CURLOPT_HEADER, false);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 3600);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-            $requestHeaders = [
-                'Accept-Encoding: gzip, deflate, br',
-                'Connection: keep-alive',
-                'User-Agent: RSUI/'.config('app.version').' (dlts@nyu.edu)',
-                'Accept: */*',
-                "Cookie: Authorization={$cookie}",
-            ];
-
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
-
-            // Headers are only known once cURL actually receives the upstream
-            // response, which happens inside the StreamedResponse callback below.
-            // Emit Content-Type/Content-Length dynamically via header() as soon
-            // as they're parsed, instead of pre-populating the response headers
-            // (which would always be empty and could send an invalid, empty
-            // Content-Length header, causing nginx to reject the response with
-            // a 502 Bad Gateway).
-            curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $header) {
-                $len = strlen($header);
-                $parts = explode(':', $header, 2);
-                if (count($parts) < 2) {
-                    return $len;
-                }
-                $name = strtolower(trim($parts[0]));
-                $value = trim($parts[1]);
-
-                if (! headers_sent() && $value !== '' && in_array($name, ['content-type', 'content-length'], true)) {
-                    header("{$name}: {$value}");
-                }
-
-                return $len;
-            });
-
-            // Pass the derived filename to the StreamedResponse
-            return new StreamedResponse(function () use ($ch) {
-                curl_exec($ch);
-                if (curl_errno($ch)) {
-                    Log::error('cURL error during streaming: '.curl_error($ch));
-                }
-                curl_close($ch);
-            }, 200, [
-                'Content-Type' => 'application/octet-stream',
-                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
-                'Expires' => '0',
-            ]);
-
-        } catch (Exception $e) {
-            Log::error('File download error: '.$e->getMessage(), ['exception' => $e]);
-
-            return new StreamedResponse(function () use ($e) {
-                echo 'Error downloading file: '.$e->getMessage();
-            }, 500, [
-                'Content-Type' => 'text/plain',
-            ]);
-        }
+        return $this->downloader->download($path);
     }
 
     /**
@@ -158,7 +69,7 @@ class ExternalApiService
 
         $requestPath = "{$sanitizedPath}?include=workflows";
 
-        $response = $this->makeRequest('GET', $requestPath);
+        $response = $this->client->request('GET', $requestPath);
 
         if (! $response || $response->failed()) {
             abort(502, 'Unable to reach the resource service.');
@@ -198,7 +109,7 @@ class ExternalApiService
      */
     public function ping(): ?array
     {
-        $response = $this->makeRequest('GET', 'ping');
+        $response = $this->client->request('GET', 'ping');
 
         return $response?->json();
     }
@@ -214,7 +125,7 @@ class ExternalApiService
     {
         try {
 
-            $response = $this->makeRequest('POST', 'jobs', [
+            $response = $this->client->request('POST', 'jobs', [
                 'json' => [
                     'workflow_id' => $workflowId,
                     'parameters' => $parameters,
@@ -252,7 +163,7 @@ class ExternalApiService
      */
     public function getPartners(): ?array
     {
-        $response = $this->makeRequest('GET', 'partners');
+        $response = $this->client->request('GET', 'partners');
 
         return $response?->json();
     }
@@ -268,11 +179,11 @@ class ExternalApiService
 
         try {
 
-            $response = $this->makeRequest('GET', "partners/{$id}");
+            $response = $this->client->request('GET', "partners/{$id}");
 
             $data = $response?->json();
 
-            $collection_response = $this->makeRequest('GET', "partners/{$id}/colls");
+            $collection_response = $this->client->request('GET', "partners/{$id}/colls");
 
             $collection_data = $collection_response?->json();
 
@@ -298,7 +209,7 @@ class ExternalApiService
 
         try {
 
-            $response = $this->makeRequest('GET', "colls/{$id}");
+            $response = $this->client->request('GET', "colls/{$id}");
 
             $data = $response?->json();
 
@@ -306,7 +217,7 @@ class ExternalApiService
 
                 $partnerId = $data['partner_id'];
 
-                $partner = $this->makeRequest('GET', "partners/{$partnerId}");
+                $partner = $this->client->request('GET', "partners/{$partnerId}");
 
                 $partnerData = $partner?->json();
 
@@ -338,102 +249,11 @@ class ExternalApiService
     public function getCollectionsByPartnerId(string $id): ?array
     {
 
-        $response = $this->makeRequest('GET', "partners/{$id}/colls");
+        $response = $this->client->request('GET', "partners/{$id}/colls");
 
         $data = $response?->json();
 
         return $data;
-    }
-
-    /**
-     * Make an authenticated HTTP request to the external API.
-     *
-     * @param  string  $method  The HTTP method (GET, POST, PUT, DELETE).
-     * @param  string  $path  The API path relative to the base URL.
-     * @param  array  $options  Additional Guzzle request options.
-     * @return Response|null The Laravel HTTP client response, or null on error.
-     */
-    protected function makeRequest(string $method, string $path, array $options = [], bool $useCache = true, int $cacheMinutes = 10): ?Response
-    {
-        try {
-            $this->validateSession();
-
-            $cookie = session('external_auth_cookie');
-
-            if (! $cookie) {
-                throw new Exception('External authentication cookie missing.');
-            }
-
-            $domain = parse_url($this->endpoint, PHP_URL_HOST);
-
-            // 3. Make the Request
-            $response = Http::baseUrl($this->endpoint)
-                ->withCookies(['Authorization' => $cookie], $domain)
-                ->withHeaders([
-                    'User-Agent' => 'RSUI/'.config('app.version').' (dlts@nyu.edu)',
-                    'Accept' => 'application/json',
-                ])
-                ->timeout(10)
-                ->send($method, $path, $options);
-
-            // Log::info($response);
-
-            $response->throw();
-
-            $this->updateAuthCookieFromResponse($response);
-
-            return $response;
-
-        } catch (Exception $e) {
-            Log::error("API Error [{$method} {$path}]: ".$e->getMessage());
-
-            return null;
-        }
-    }
-
-    /**
-     * Update the authentication cookie from the response.
-     *
-     * The response cookie jar is seeded with the cookie that was SENT with the request
-     * (via `withCookies()`), and the upstream `Set-Cookie` is appended to it rather than
-     * replacing that entry. Selecting the first match therefore returns the outgoing
-     * cookie, which carries no expiry, and would overwrite `external_auth_expires` with
-     * null — logging the user out on their next request. Always prefer the last matching
-     * cookie, and never clear a known expiry with a null value.
-     */
-    private function updateAuthCookieFromResponse(Response $response): void
-    {
-        $cookie = collect($response->cookies()->toArray())
-            ->where('Name', 'Authorization')
-            ->last();
-
-        $authCookie = $cookie['Value'] ?? null;
-
-        if (! $authCookie) {
-            return;
-        }
-
-        session(['external_auth_cookie' => $authCookie]);
-
-        $expiresCookie = $cookie['Expires'] ?? null;
-
-        if ($expiresCookie) {
-            session(['external_auth_expires' => $expiresCookie]);
-        }
-    }
-
-    /**
-     * Validate the external authentication session.
-     *
-     * @throws ExternalAuthSessionExpiredException
-     */
-    private function validateSession(): void
-    {
-        $expires = session('external_auth_expires');
-
-        if (! $expires || now()->timestamp > $expires) {
-            throw new ExternalAuthSessionExpiredException('External session has expired.');
-        }
     }
 
     /**
@@ -446,9 +266,9 @@ class ExternalApiService
     public function updateUserName(string $userId, string $newName): ?array
     {
         try {
-            $response = $this->makeRequest('PATCH', 'users', [
+            $response = $this->client->request('PATCH', 'users', [
                 'json' => ['username' => $newName],
-            ], false);
+            ]);
 
             return $response?->json();
         } catch (Exception $e) {
@@ -470,9 +290,9 @@ class ExternalApiService
     {
         try {
 
-            $response = $this->makeRequest('PATCH', 'users', [
+            $response = $this->client->request('PATCH', 'users', [
                 'json' => $passwordData,
-            ], false);
+            ]);
 
             return $response?->json();
         } catch (Exception $e) {
@@ -517,7 +337,7 @@ class ExternalApiService
             }
 
             // 3. Execute authenticated GET request to search endpoint with all parameters
-            $response = $this->makeRequest('GET', 'search?'.http_build_query($queryParams));
+            $response = $this->client->request('GET', 'search?'.http_build_query($queryParams));
 
             $results = $response?->json();
 
