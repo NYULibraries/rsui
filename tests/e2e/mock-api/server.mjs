@@ -149,7 +149,33 @@ export function createMockApi({ endpoint }) {
 
         if (path.endsWith('video-sample.mp4')) {
             const buf = Buffer.from('fake-mp4-bytes');
-            res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': buf.length, 'Set-Cookie': authCookieHeader() });
+            const range = req.headers.range;
+
+            // Mirror the real RSBE origin's Range support so E2E playback exercises
+            // the same 206 Partial Content path the app now proxies through.
+            if (range) {
+                const match = /bytes=(\d+)-(\d*)/.exec(range);
+                if (match) {
+                    const start = Number(match[1]);
+                    const end = match[2] === '' ? buf.length - 1 : Number(match[2]);
+                    const chunk = buf.subarray(start, end + 1);
+                    res.writeHead(206, {
+                        'Content-Type': 'video/mp4',
+                        'Content-Length': chunk.length,
+                        'Content-Range': `bytes ${start}-${end}/${buf.length}`,
+                        'Accept-Ranges': 'bytes',
+                        'Set-Cookie': authCookieHeader(),
+                    });
+                    return res.end(chunk);
+                }
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'video/mp4',
+                'Content-Length': buf.length,
+                'Accept-Ranges': 'bytes',
+                'Set-Cookie': authCookieHeader(),
+            });
             return res.end(buf);
         }
 

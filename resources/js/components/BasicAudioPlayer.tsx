@@ -23,7 +23,7 @@ const BasicAudioPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
 
     return (
         <div className="flex flex-col items-center justify-center p-4">
-            <audio controls className="w-full max-w-md">
+            <audio controls preload="metadata" className="w-full max-w-md">
                 <source src={audioSrc} type={type} />
                 Your browser does not support the audio element.
             </audio>

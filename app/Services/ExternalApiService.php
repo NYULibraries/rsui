@@ -41,6 +41,9 @@ class ExternalApiService
      *
      * @param  string  $path  The relative or absolute path to the file on the external service.
      *                        If relative, it will be prefixed with the controller's endpoint.
+     * @param  string|null  $range  The client's `Range` request header (e.g. `bytes=0-1023`), if
+     *                              any, forwarded so audio/video can be seeked without
+     *                              re-downloading the whole file.
      * @return StreamedResponse A streamed response that
      *                          sends the file content to the client.
      *
@@ -48,9 +51,9 @@ class ExternalApiService
      *                   if the URL is invalid, or if the file download from the
      *                   external service fails.
      */
-    public function downloadFile(string $path): StreamedResponse
+    public function downloadFile(string $path, ?string $range = null): StreamedResponse
     {
-        return $this->downloader->download($path);
+        return $this->downloader->download($path, $range);
     }
 
     /**

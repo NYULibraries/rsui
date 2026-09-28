@@ -25,7 +25,7 @@ const BasicVideoPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
 
     return (
         <div className="flex flex-col items-center justify-center p-4">
-            <video controls className="w-full max-w-md">
+            <video controls preload="metadata" className="w-full max-w-md">
                 <source src={mediaSrc} type={type} />
                 Your browser does not support the video element.
             </video>
