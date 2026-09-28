@@ -31,7 +31,7 @@ class ExternalFileDownloader
             $externalRequestUrl = "{$path}?download=true";
 
             if (App::isLocal()) {
-                Log::info("External request Url: {$externalRequestUrl}");
+                Log::info("External request Url: {$externalRequestUrl}", ['range_requested' => $range]);
             }
 
             $filename = basename(parse_url($path, PHP_URL_PATH)) ?: 'downloaded_file';
@@ -46,7 +46,12 @@ class ExternalFileDownloader
             // Forwarding Range lets the origin respond with 206 Partial Content so
             // <audio>/<video> elements can seek and start playback on a slice of the
             // file instead of always re-fetching (and buffering) it from byte 0.
-            if ($range) {
+            $rangeStart = null;
+            $rangeEnd = null;
+
+            if ($range && preg_match('/^bytes=(\d+)-(\d*)$/', $range, $rangeMatches)) {
+                $rangeStart = (int) $rangeMatches[1];
+                $rangeEnd = $rangeMatches[2] !== '' ? (int) $rangeMatches[2] : null;
                 $requestHeaders[] = "Range: {$range}";
             }
 
@@ -61,19 +66,40 @@ class ExternalFileDownloader
             curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($handle, CURLOPT_HTTPHEADER, $requestHeaders);
 
-            // Track the response line/headers from the origin so we can mirror the
-            // status code (200 vs 206) and range metadata back to the browser. These
-            // are applied via raw header()/http_response_code() calls (not the
-            // StreamedResponse constructor args below, which are evaluated immediately
-            // and before curl ever runs) since PHP still allows overriding headers
-            // as long as no response body has been flushed yet.
-            curl_setopt($handle, CURLOPT_HEADERFUNCTION, function ($curl, $header): int {
+            // Some origins ignore the Range header and always return the full file
+            // with a 200. If we simply relayed that, the browser (which is expecting
+            // a 206 slice starting at the seeked byte) gets confused: it repeatedly
+            // aborts the still-downloading full-file response every time the user
+            // seeks again, and playback never resumes ("aborted by the user agent").
+            // When that happens we emulate a real 206 ourselves: fabricate the
+            // Content-Range/Content-Length for the requested slice, and drop/stop
+            // streaming bytes outside of it as they arrive from the origin.
+            $emulateRange = false;
+            $originContentLength = null;
+
+            curl_setopt($handle, CURLOPT_HEADERFUNCTION, function ($curl, $header) use ($range, $rangeStart, &$emulateRange, &$originContentLength): int {
                 $length = strlen($header);
                 $trimmed = trim($header);
 
                 if (preg_match('#^HTTP/\S+\s+(\d{3})#', $trimmed, $matches)) {
+                    $status = (int) $matches[1];
+                    $emulateRange = $rangeStart !== null && $status === 200;
+
                     if (! headers_sent()) {
-                        http_response_code((int) $matches[1]);
+                        http_response_code($emulateRange ? 206 : $status);
+                    }
+
+                    if (App::isLocal()) {
+                        // Logs whether the origin actually honored a Range request
+                        // (206) or ignored it and sent the whole file back (200),
+                        // which is the usual cause of "seeking backward works,
+                        // seeking forward doesn't": the browser assumes ranges are
+                        // supported after a 206, but a 200 forces a full re-fetch.
+                        Log::info('External download response status', [
+                            'range_requested' => $range,
+                            'status' => $status,
+                            'emulating_range' => $emulateRange,
+                        ]);
                     }
 
                     return $length;
@@ -92,12 +118,25 @@ class ExternalFileDownloader
                     return $length;
                 }
 
+                if ($name === 'content-length') {
+                    $originContentLength = (int) $value;
+                }
+
+                if (App::isLocal() && in_array($name, ['content-range', 'accept-ranges', 'content-length'], true)) {
+                    Log::info("External download response header: {$name}: {$value}");
+                }
+
                 if ($name === 'content-type' && (str_starts_with($value, 'audio/') || str_starts_with($value, 'video/'))) {
                     // Play media inline instead of forcing a "Save As" prompt.
                     header('Content-Disposition: inline');
                 }
 
-                $forwardable = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
+                // While emulating, content-length/content-range describe the
+                // origin's full-file response, not our fabricated slice, so they're
+                // recomputed and sent once the slice's end is known (see below).
+                $forwardable = $emulateRange
+                    ? ['content-type']
+                    : ['content-type', 'content-length', 'content-range', 'accept-ranges'];
 
                 if (in_array($name, $forwardable, true)) {
                     header("{$name}: {$value}");
@@ -106,23 +145,94 @@ class ExternalFileDownloader
                 return $length;
             });
 
-            return new StreamedResponse(function () use ($handle): void {
-                // Flush each chunk to the client as soon as it arrives from the origin
-                // instead of letting PHP/the webserver buffer the whole file, so
-                // playback can start sooner.
-                curl_setopt($handle, CURLOPT_WRITEFUNCTION, function ($curl, $chunk): int {
-                    echo $chunk;
-                    if (ob_get_level() > 0) {
-                        ob_flush();
-                    }
-                    flush();
+            return new StreamedResponse(function () use ($handle, &$rangeStart, &$rangeEnd, &$emulateRange, &$originContentLength): void {
+                // Bytes already consumed from the origin's stream so far, used to
+                // locate the requested slice's boundaries within incoming chunks
+                // while emulating Range support.
+                $bytesSeen = 0;
+                $headersFinalized = false;
 
-                    return strlen($chunk);
+                curl_setopt($handle, CURLOPT_WRITEFUNCTION, function ($curl, $chunk) use (&$bytesSeen, &$headersFinalized, &$rangeStart, &$rangeEnd, &$emulateRange, &$originContentLength): int {
+                    $chunkLength = strlen($chunk);
+
+                    if (! $emulateRange) {
+                        echo $chunk;
+                        if (ob_get_level() > 0) {
+                            ob_flush();
+                        }
+                        flush();
+
+                        return $chunkLength;
+                    }
+
+                    // Only once the origin's real Content-Length is known can we
+                    // compute the fabricated slice's end and total, and emit the
+                    // Content-Range/Content-Length headers for it (still before any
+                    // body bytes have been echoed).
+                    if (! $headersFinalized) {
+                        if ($originContentLength === null) {
+                            // No Content-Length to build a valid Content-Range from;
+                            // fall back to relaying the origin's response as-is.
+                            $emulateRange = false;
+                            echo $chunk;
+                            if (ob_get_level() > 0) {
+                                ob_flush();
+                            }
+                            flush();
+
+                            return $chunkLength;
+                        }
+
+                        $rangeEnd ??= $originContentLength - 1;
+                        $rangeEnd = min($rangeEnd, $originContentLength - 1);
+
+                        if (! headers_sent()) {
+                            header("Content-Range: bytes {$rangeStart}-{$rangeEnd}/{$originContentLength}");
+                            header('Content-Length: '.($rangeEnd - $rangeStart + 1));
+                            header('Accept-Ranges: bytes');
+                        }
+
+                        $headersFinalized = true;
+                    }
+
+                    $chunkStart = $bytesSeen;
+                    $chunkEnd = $bytesSeen + $chunkLength - 1;
+                    $bytesSeen += $chunkLength;
+
+                    // Chunk entirely before the requested slice: skip it, but tell
+                    // curl to keep going by reporting the full chunk as consumed.
+                    if ($chunkEnd < $rangeStart) {
+                        return $chunkLength;
+                    }
+
+                    $sliceStart = max(0, $rangeStart - $chunkStart);
+                    $sliceEnd = min($chunkLength - 1, $rangeEnd - $chunkStart);
+
+                    if ($sliceStart <= $sliceEnd) {
+                        echo substr($chunk, $sliceStart, $sliceEnd - $sliceStart + 1);
+                        if (ob_get_level() > 0) {
+                            ob_flush();
+                        }
+                        flush();
+                    }
+
+                    // Once we've delivered through the end of the requested slice,
+                    // stop the transfer early instead of waiting for the origin to
+                    // send the rest of the file. Returning a value that doesn't
+                    // match $chunkLength tells curl to abort with CURLE_WRITE_ERROR,
+                    // which is expected/handled below.
+                    if ($chunkEnd >= $rangeEnd) {
+                        return $sliceEnd - $sliceStart + 1;
+                    }
+
+                    return $chunkLength;
                 });
 
                 curl_exec($handle);
 
-                if (curl_errno($handle)) {
+                // CURLE_WRITE_ERROR (23) here just means we intentionally stopped
+                // the origin transfer early once the requested slice was delivered.
+                if (curl_errno($handle) && curl_errno($handle) !== CURLE_WRITE_ERROR) {
                     Log::error('cURL error during streaming: '.curl_error($handle));
                 }
 
