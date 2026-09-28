@@ -73,6 +73,7 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
     open: openProp,
     onOpenChange,
 }) => {
+
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const isControlled = openProp !== undefined;
     const open = isControlled ? openProp : uncontrolledOpen;
@@ -287,6 +288,7 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                     <DialogDescription className="text-sm">
                         Select an action to run against this {isDirectory ? 'directory' : 'file'}, then review and submit its parameters.
                     </DialogDescription>
+
                 </DialogHeader>
                 <div className="flex flex-1 flex-col gap-6 overflow-y-auto py-2">
                     <div className="grid gap-2">
@@ -303,6 +305,12 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                                 ))}
                             </SelectContent>
                         </Select>
+                        {typeof (selectedWorkflow as (Workflow & { additional_info?: unknown }) | null)?.additional_info === 'string' &&
+                            (selectedWorkflow as (Workflow & { additional_info?: string }) | null)?.additional_info?.trim() !== '' && (
+                            <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
+                                {(selectedWorkflow as Workflow & { additional_info: string }).additional_info}
+                            </p>
+                        )}
                         {workflows.length === 0 && (
                             <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
                                 No workflow actions are currently available for this item.

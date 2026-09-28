@@ -17,6 +17,13 @@ export default function Partner() {
         error?: string;
     }>().props;
 
+    const { collectionDetailsCollapsed } = useAppearance();
+    const [isTableVisible, setIsTableVisible] = useState(!collectionDetailsCollapsed);
+
+    useEffect(() => {
+        setIsTableVisible(!collectionDetailsCollapsed);
+    }, [collectionDetailsCollapsed]);
+
     if (!collection) {
         return (
             <AppLayout breadcrumbs={[{ title: 'Partners', href: '/dashboard' }]}>
@@ -38,13 +45,6 @@ export default function Partner() {
     }
 
     const { partner } = collection;
-
-    const { collectionDetailsCollapsed } = useAppearance();
-    const [isTableVisible, setIsTableVisible] = useState(!collectionDetailsCollapsed);
-
-    useEffect(() => {
-        setIsTableVisible(!collectionDetailsCollapsed);
-    }, [collectionDetailsCollapsed]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
