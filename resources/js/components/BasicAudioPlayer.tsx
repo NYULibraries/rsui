@@ -27,7 +27,7 @@ const BasicAudioPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
                 <source src={audioSrc} type={type} />
                 Your browser does not support the audio element.
             </audio>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
                 File Type: {type || 'Unknown'}
                 {src.startsWith('blob:') && ' (Streaming)'}
             </p>

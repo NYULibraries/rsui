@@ -342,7 +342,7 @@ const FileExplorer = ({
                                             </td>
                                             <td className="p-2">{formatDate(item.last_modified)}</td>
                                             <td className="p-2">
-                                                <ChevronRight size={24} className="text-gray-400" />
+                                                <ChevronRight size={24} className="text-muted-foreground" />
                                             </td>
                                         </tr>
                                     );

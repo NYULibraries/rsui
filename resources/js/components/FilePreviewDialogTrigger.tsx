@@ -74,7 +74,7 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({
                             </span>
                         ) : (
                             <span>
-                                Displaying file: <span className="font-mono text-sm break-all text-gray-600">{item.name}</span>
+                                Displaying file: <span className="font-mono text-sm break-all text-muted-foreground">{item.name}</span>
                             </span>
                         )}
                     </DialogDescription>

@@ -29,7 +29,7 @@ const BasicVideoPlayer: React.FC<{ src: string; type: string }> = ({ src, type }
                 <source src={mediaSrc} type={type} />
                 Your browser does not support the video element.
             </video>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
                 File Type: {type || 'Unknown'}
                 {src.startsWith('blob:') && ' (Streaming)'}
             </p>

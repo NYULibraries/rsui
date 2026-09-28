@@ -130,7 +130,7 @@ export function PartnerCollectionsTable({ collections }: CollectionTableProps) {
                             href={route('collection.show', row.getValue('id'))}
                             className="group flex items-center rounded-sm px-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
-                            <ChevronRight size={24} className="text-gray-400 transition-colors group-hover:text-primary" />
+                            <ChevronRight size={24} className="text-muted-foreground transition-colors group-hover:text-primary" />
                         </Link>
                     );
                 },

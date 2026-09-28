@@ -85,7 +85,7 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item, preloadedContent })
             <Card className="rounded-lg shadow-lg">
                 <CardContent className="p-6">
                     {isLoading && (
-                        <div className="flex min-h-50 items-center justify-center text-gray-500">
+                        <div className="flex min-h-50 items-center justify-center text-muted-foreground">
                             <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                             Loading file content...
                         </div>
@@ -98,18 +98,18 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item, preloadedContent })
                             ) : fileType === 'video' && fileUrl ? (
                                 <BasicVideoPlayer src={fileUrl} type={item?.mime_type || 'video/mp4'} />
                             ) : fileContent ? (
-                                <div className="relative overflow-hidden rounded-md border border-gray-300">
+                                <div className="relative overflow-hidden rounded-md border">
                                     <Textarea
                                         value={formatContent(fileContent, fileType)}
                                         readOnly
-                                        className="min-h-100 w-full resize-none border-none bg-gray-50 p-4 font-mono text-sm text-gray-900 focus-visible:ring-0"
+                                        className="min-h-100 w-full resize-none border-none bg-muted p-4 font-mono text-sm text-foreground focus-visible:ring-0"
                                         aria-label="File content preview"
                                         spellCheck="false"
                                     />
                                 </div>
                             ) : (
                                 item?.download_url && (
-                                    <div className="py-4 text-center text-gray-500">
+                                    <div className="py-4 text-center text-muted-foreground">
                                         No content found at the provided URL or content is empty.
                                         {(fileType === 'audio' || fileType === 'video') && ' (Media will attempt to stream directly.)'}
                                     </div>

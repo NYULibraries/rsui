@@ -113,7 +113,7 @@ export default function SearchIndex() {
                                     <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">{timeoutError}</p>
                                     <button
                                         onClick={() => performSearch(searchTerm, page)}
-                                        className="mt-3 cursor-pointer rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none"
+                                        className="mt-3 cursor-pointer rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none dark:bg-orange-700 dark:hover:bg-orange-600"
                                     >
                                         Try Again
                                     </button>
