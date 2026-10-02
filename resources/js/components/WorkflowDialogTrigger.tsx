@@ -245,7 +245,7 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                     </Button>
                 </DialogTrigger>
             )}
-            <DialogContent className="flex h-[80vh] w-[80vw] max-w-[80vw] flex-col overflow-y-auto sm:max-w-[80vw]">
+            <DialogContent className="flex h-[95vh] w-[95vw] max-w-[95vw] flex-col overflow-y-auto sm:max-w-[95vw]">
                 <DialogHeader className="space-y-3">
                     {(partnerName || collectionName) && (
                         <div className="flex flex-wrap items-center gap-2 text-sm">
