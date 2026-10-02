@@ -5,6 +5,7 @@ namespace App\Services;
 use Exception;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExternalFileDownloader
@@ -86,7 +87,14 @@ class ExternalFileDownloader
                     $emulateRange = $rangeStart !== null && $status === 200;
 
                     if (! headers_sent()) {
-                        http_response_code($emulateRange ? 206 : $status);
+                        // Symfony's StreamedResponse already emitted the initial "HTTP/1.1 200 OK"
+                        // status line via header() before invoking this callback, so
+                        // http_response_code() can no longer change it (PHP only honors the first
+                        // header()-set status line). Overriding with an explicit status-line
+                        // header() call works regardless of that ordering.
+                        $code = $emulateRange ? 206 : $status;
+                        $text = Response::$statusTexts[$code] ?? '';
+                        header("HTTP/1.1 {$code} {$text}");
                     }
 
                     if (App::isLocal()) {

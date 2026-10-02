@@ -54,7 +54,7 @@ const FilePreviewDialogTrigger: React.FC<FilePreviewDialogTriggerProps> = ({
                     <div style={{ display: 'none' }} />
                 )}
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-200">
+            <DialogContent className="flex h-[98vh] max-h-[98vh] w-[98vw] max-w-[98vw] flex-col overflow-y-auto sm:max-w-[98vw]">
                 <DialogHeader>
                     <DialogTitle>File Previewer</DialogTitle>
                     <DialogDescription>
