@@ -258,28 +258,6 @@ const FileExplorer = ({
 
                                 item.preview = false;
 
-                                // Set preview to true for specific mime types
-                                if (item.size && item.size > 0 && item.mime_type) {
-                                    switch (item.mime_type) {
-                                        case 'application/xml':
-                                        case 'application/json':
-                                        case 'text/plain':
-                                        case 'text/csv':
-                                        case 'text/xsl':
-                                        case 'application/xslt+xml':
-                                        case 'audio/wav':
-                                        case 'audio/mpeg':
-                                        case 'audio/ogg':
-                                        case 'audio/aac':
-                                        case 'video/mp4':
-                                        case 'video/webm':
-                                        case 'video/ogg':
-                                        case 'text/html':
-                                            item.preview = true;
-                                            break;
-                                    }
-                                }
-
                                 const is_empty_dir = item.is_empty_dir === true;
 
                                 if (item.object_type === 'file') {
@@ -298,7 +276,6 @@ const FileExplorer = ({
                                                     partnerName={partnerName}
                                                     collectionName={collectionName}
                                                     downloadable={isDownloadable(item)}
-                                                    previewable={item.preview === true}
                                                 />
                                             </td>
                                             <td className="p-2">{formatDate(item.last_modified)}</td>

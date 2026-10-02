@@ -1,5 +1,3 @@
-import BasicAudioPlayer from '@/components/BasicAudioPlayer';
-import BasicVideoPlayer from '@/components/BasicVideoPlayer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import formatContent from '@/lib/formatContent';
@@ -93,11 +91,7 @@ const FilePreviewer: React.FC<FilePreviewerProps> = ({ item, preloadedContent })
                     {error && <div className="py-4 text-center text-red-600">Error: {error}</div>}
                     {!isLoading && !error && (
                         <>
-                            {fileType === 'audio' && fileUrl ? (
-                                <BasicAudioPlayer src={fileUrl} type={item?.mime_type || 'audio/mpeg'} />
-                            ) : fileType === 'video' && fileUrl ? (
-                                <BasicVideoPlayer src={fileUrl} type={item?.mime_type || 'video/mp4'} />
-                            ) : fileContent ? (
+                            {fileContent ? (
                                 <div className="relative overflow-hidden rounded-md border">
                                     <Textarea
                                         value={formatContent(fileContent, fileType)}
