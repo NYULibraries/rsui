@@ -1,3 +1,4 @@
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -44,6 +45,58 @@ const getItemValue = (item: FileItem, key: string): string => {
     return '';
 };
 
+/**
+ * Compiles a workflow parameter's regex pattern. `pattern` is a free-text string supplied by the
+ * workflow profile API (e.g. `^[a-zA-Z0-9_-]+[a-zA-Z0-9_.-]*$` for "Target subdirectory"), not a
+ * value we control, so a future/misconfigured profile could send a string `new RegExp()` can't
+ * compile (a typo, or syntax valid in another regex engine but not JS). `new RegExp()` throws a
+ * `SyntaxError` in that case, so this falls back to `null` ("no pattern to validate against")
+ * instead of crashing the dialog or blocking submission over an API-side formatting issue.
+ */
+const compileParameterPattern = (pattern: string | undefined): RegExp | null => {
+    if (!pattern) {
+        return null;
+    }
+
+    try {
+        return new RegExp(pattern);
+    } catch {
+        return null;
+    }
+};
+
+const isParameterValueValid = (parameter: WorkflowParameter, value: string): boolean => {
+    const trimmed = value.trim();
+
+    if (parameter.required && trimmed.length === 0) {
+        return false;
+    }
+
+    const regex = compileParameterPattern(parameter.pattern);
+
+    if (regex && value.length > 0 && !regex.test(value)) {
+        return false;
+    }
+
+    return true;
+};
+
+const getParameterError = (parameter: WorkflowParameter, value: string): string | undefined => {
+    const trimmed = value.trim();
+
+    if (parameter.required && trimmed.length === 0) {
+        return 'This field is required.';
+    }
+
+    const regex = compileParameterPattern(parameter.pattern);
+
+    if (regex && value.length > 0 && !regex.test(value)) {
+        return `Value does not match the required format (${parameter.pattern}).`;
+    }
+
+    return undefined;
+};
+
 const resolveContextParameter = (parameter: WorkflowParameter, item: FileItem): string => {
     const bindingValue = parameter.binding ? getItemValue(item, parameter.binding) : '';
 
@@ -73,7 +126,6 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
     open: openProp,
     onOpenChange,
 }) => {
-
     const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const isControlled = openProp !== undefined;
     const open = isControlled ? openProp : uncontrolledOpen;
@@ -89,6 +141,7 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
     const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
     const [selectedWorkflowId, setSelectedWorkflowId] = useState('');
     const [values, setValues] = useState<Record<string, string>>({});
+    const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
     const selectedWorkflow = useMemo(
         () => workflows.find((workflow) => getWorkflowKey(workflow) === selectedWorkflowId) ?? null,
@@ -123,21 +176,19 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
 
     useEffect(() => {
         setValues({});
+        setTouchedFields({});
     }, [selectedWorkflowId]);
 
     const setValue = (name: string, value: string) => {
         setValues((prev) => ({ ...prev, [name]: value }));
+        setTouchedFields((prev) => ({ ...prev, [name]: true }));
     };
 
-    const isValid = userParameters.every((parameter) => {
-        if (!parameter.required) {
-            return true;
-        }
+    const markTouched = (name: string) => {
+        setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    };
 
-        const value = values[parameter.name];
-
-        return typeof value === 'string' && value.trim().length > 0;
-    });
+    const isValid = userParameters.every((parameter) => isParameterValueValid(parameter, values[parameter.name] ?? ''));
 
     const handleSubmit = async () => {
         if (!selectedWorkflow) {
@@ -199,6 +250,8 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
 
     const renderField = (parameter: WorkflowParameter) => {
         const value = values[parameter.name] ?? '';
+        const touched = touchedFields[parameter.name] ?? false;
+        const error = touched ? getParameterError(parameter, value) : undefined;
 
         if (parameter.options && parameter.options.length > 0) {
             // Options may be plain strings or `{ value, description }` objects (as advertised by
@@ -224,13 +277,19 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
         }
 
         return (
-            <Input
-                id={parameter.name}
-                value={value}
-                pattern={parameter.pattern}
-                required={parameter.required}
-                onChange={(e) => setValue(parameter.name, e.target.value)}
-            />
+            <>
+                <Input
+                    id={parameter.name}
+                    value={value}
+                    pattern={parameter.pattern}
+                    required={parameter.required}
+                    aria-invalid={Boolean(error)}
+                    className={error ? 'border-destructive focus-visible:ring-destructive' : undefined}
+                    onChange={(e) => setValue(parameter.name, e.target.value)}
+                    onBlur={() => markTouched(parameter.name)}
+                />
+                <InputError message={error} />
+            </>
         );
     };
 
@@ -288,7 +347,6 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                     <DialogDescription className="text-sm">
                         Select an action to run against this {isDirectory ? 'directory' : 'file'}, then review and submit its parameters.
                     </DialogDescription>
-
                 </DialogHeader>
                 <div className="flex flex-1 flex-col gap-6 overflow-y-auto py-2">
                     <div className="grid gap-2">
@@ -307,10 +365,10 @@ const WorkflowDialogTrigger: React.FC<WorkflowDialogTriggerProps> = ({
                         </Select>
                         {typeof (selectedWorkflow as (Workflow & { additional_info?: unknown }) | null)?.additional_info === 'string' &&
                             (selectedWorkflow as (Workflow & { additional_info?: string }) | null)?.additional_info?.trim() !== '' && (
-                            <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
-                                {(selectedWorkflow as Workflow & { additional_info: string }).additional_info}
-                            </p>
-                        )}
+                                <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
+                                    {(selectedWorkflow as Workflow & { additional_info: string }).additional_info}
+                                </p>
+                            )}
                         {workflows.length === 0 && (
                             <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">
                                 No workflow actions are currently available for this item.
