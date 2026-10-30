@@ -39,6 +39,14 @@ jobs:
           key: composer-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: composer-${{ runner.os }}-
 
+      # AppServiceProvider::boot() validates required env vars (e.g. RS_V1_ENDPOINT) on
+      # every framework bootstrap, including the `artisan package:discover` call that
+      # Composer's post-autoload-dump script triggers. Seed a disposable .env from the
+      # example file so that bootstrap succeeds in CI; it's git-ignored and excluded
+      # from the release archive by the git-archive-based packaging step below.
+      - name: Seed build-time .env
+        run: cp .env.example .env
+
       - name: Install PHP Dependencies
         run: |
           composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
