@@ -129,7 +129,8 @@ and remaining gaps, and `tests/e2e/README.md` for E2E infrastructure details.
 ## Deployment
 
 `.github/workflows/build-release.yml` builds and publishes a release whenever a `v*` tag
-is pushed (or via manual `workflow_dispatch`):
+is pushed. Manual workflow dispatches require a release tag, which is created at the
+selected commit:
 
 1. Installs PHP dependencies (`--no-dev`) and builds frontend assets (`pnpm run build`),
    verifying `public/build` exists.
