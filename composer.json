@@ -12,7 +12,6 @@
         "php": "^8.2",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^13.0",
-        "laravel/octane": "^2.9",
         "laravel/sanctum": "^4.1",
         "laravel/tinker": "^3.0",
         "tightenco/ziggy": "^2.4"
@@ -23,7 +22,6 @@
         "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
-        "laravel/sail": "^1.41",
         "laravel/telescope": "^5.9",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
