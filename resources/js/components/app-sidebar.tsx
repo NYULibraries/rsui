@@ -17,6 +17,11 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
+        title: 'User manual',
+        href: 'https://docs.google.com/document/d/1X8pdg2vc7dC_upZNn39EDPk1uAsne3jHSEGoiU1vCNI',
+        icon: BookOpen,
+    },
+    {
         title: 'NYU Digital Library Technology Services',
         href: 'https://wp.nyu.edu/library-dlts/',
         icon: BookOpen,
